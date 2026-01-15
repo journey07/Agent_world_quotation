@@ -1,5 +1,5 @@
 import { getAllInquiries } from '../../src/services/inquiryService.js';
-import { setCorsHeaders, handleOptions } from '../utils/cors.js';
+import { setCorsHeaders, handleOptions } from '../../src/utils/cors.js';
 
 export default async function handler(req, res) {
   // CORS 헤더 설정

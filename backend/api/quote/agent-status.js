@@ -1,5 +1,5 @@
 import { setAgentStatus } from '../../src/services/statsService.js';
-import { setCorsHeaders, handleOptions } from '../utils/cors.js';
+import { setCorsHeaders, handleOptions } from '../../src/utils/cors.js';
 
 export default async function handler(req, res) {
   // CORS 헤더 설정

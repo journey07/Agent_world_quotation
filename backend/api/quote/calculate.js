@@ -1,6 +1,6 @@
 import { calculateQuote } from '../../src/services/pricingService.js';
 import { trackApiCall } from '../../src/services/statsService.js';
-import { setCorsHeaders, handleOptions } from '../utils/cors.js';
+import { setCorsHeaders, handleOptions } from '../../src/utils/cors.js';
 
 /**
  * Validate locker configuration input
