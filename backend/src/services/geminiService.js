@@ -1,16 +1,22 @@
 import { GoogleGenAI } from "@google/genai";
 
 // Initialize Gemini client with API key from environment variable
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+// Lazy initialization to avoid errors when module is loaded but API key is not needed
+let ai = null;
 export const MODEL_NAME = "gemini-3-pro-image-preview";
 
-if (!GEMINI_API_KEY) {
-    throw new Error('GEMINI_API_KEY environment variable is not set. Please create a .env file in the backend directory with GEMINI_API_KEY=your_api_key. See .env.example for reference.');
+function getAI() {
+    if (!ai) {
+        const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+        if (!GEMINI_API_KEY) {
+            throw new Error('GEMINI_API_KEY environment variable is not set. Please create a .env file in the backend directory with GEMINI_API_KEY=your_api_key. See .env.example for reference.');
+        }
+        ai = new GoogleGenAI({
+            apiKey: GEMINI_API_KEY,
+        });
+    }
+    return ai;
 }
-
-const ai = new GoogleGenAI({
-    apiKey: GEMINI_API_KEY,
-});
 
 /**
  * Generate a 3D installation visualization from a locker layout image
@@ -104,7 +110,8 @@ Style: Clean, professional, architectural photography, 3D render, high resolutio
 
         // Call Gemini API to generate the image
         // Using Nano Banana Pro (gemini-3-pro-image-preview) as requested
-        const response = await ai.models.generateContent({
+        const aiInstance = getAI();
+        const response = await aiInstance.models.generateContent({
             model: MODEL_NAME,
             contents: prompt,
         });
@@ -196,12 +203,13 @@ Style: Clean, professional, architectural photography, 3D render, high resolutio
  */
 export async function verifyConnection() {
     try {
+        const aiInstance = getAI();
         // Trying a simple model list or property check if getGenerativeModel is missing
         // If ai.models.generateContent is used elsewhere, let's see what's on ai
-        if (typeof ai.getGenerativeModel === 'function') {
-            await ai.getGenerativeModel({ model: "gemini-1.5-flash" });
+        if (typeof aiInstance.getGenerativeModel === 'function') {
+            await aiInstance.getGenerativeModel({ model: "gemini-1.5-flash" });
             return { success: true, message: 'API Connection OK' };
-        } else if (ai.models && typeof ai.models.generateContent === 'function') {
+        } else if (aiInstance.models && typeof aiInstance.models.generateContent === 'function') {
             // This seems to be the pattern used in generate3DInstallation
             return { success: true, message: 'API Connection OK (Validated via models instance)' };
         }
