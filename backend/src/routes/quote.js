@@ -91,7 +91,7 @@ router.post('/calculate', async (req, res) => {
         if (deliveryLocation) quote.deliveryLocation = deliveryLocation;
 
         // Create descriptive log message
-        const summary = `Quote: ${quote.input.columns}x${quote.input.tiers} Set:${quote.breakdown.quantity} ${quote.summary.total.toLocaleString()}KRW`;
+        const summary = `Calculated Quote: ${quote.input.columns}x${quote.input.tiers} Set:${quote.breakdown.quantity} ${quote.summary.total.toLocaleString()}KRW`;
 
         // Log and count as Task (Interactive feedback)
         trackApiCall('calculate', Date.now() - startTime, false, false, true, summary);
@@ -344,7 +344,7 @@ router.post('/generate-3d-installation', async (req, res) => {
         const responseTime = Date.now() - startTime;
 
         // Send completion log
-        sendActivityLog(`✅ 3D Generation Complete (${(responseTime / 1000).toFixed(1)}s)`, 'success', responseTime);
+        sendActivityLog(`✅ 3D Generation Completed (${(responseTime / 1000).toFixed(1)}s)`, 'success', responseTime);
 
         // Track API call (this is the main 3D generation task)
         trackApiCall('generate-3d-installation', responseTime, false);

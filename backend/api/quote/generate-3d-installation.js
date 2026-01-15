@@ -76,7 +76,7 @@ export default async function handler(req, res) {
 
     // Send completion log
     await sendActivityLog(
-      `✅ 3D Generation Complete (${(responseTime / 1000).toFixed(1)}s)`,
+      `✅ 3D Generation Completed (${(responseTime / 1000).toFixed(1)}s)`,
       'success',
       responseTime,
     );

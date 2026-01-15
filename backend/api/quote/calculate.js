@@ -111,7 +111,7 @@ export default async function handler(req, res) {
     if (deliveryLocation) quote.deliveryLocation = deliveryLocation;
 
     // Create descriptive log message
-    const summary = `Quote: ${quote.input.columns}x${quote.input.tiers} Set:${quote.breakdown.quantity} ${quote.summary.total.toLocaleString()}KRW`;
+    const summary = `Calculated Quote: ${quote.input.columns}x${quote.input.tiers} Set:${quote.breakdown.quantity} ${quote.summary.total.toLocaleString()}KRW`;
 
     // Log and count as Task (Interactive feedback) - 에러 발생해도 계속 진행
     try {
