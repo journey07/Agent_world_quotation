@@ -3,7 +3,7 @@ import { setCorsHeaders, handleOptions } from '../../src/utils/cors.js';
 
 export default async function handler(req, res) {
   // CORS 헤더 설정
-  setCorsHeaders(res);
+  setCorsHeaders(req, res);
 
   // OPTIONS 요청 처리
   if (req.method === 'OPTIONS') {

@@ -1,19 +1,68 @@
 /**
  * CORS 헤더 설정 유틸리티
  */
-export function setCorsHeaders(res) {
-  // 프로덕션에서는 특정 도메인만 허용하도록 설정 가능
-  const allowedOrigins = process.env.ALLOWED_ORIGINS
-    ? process.env.ALLOWED_ORIGINS.split(',')
-    : ['*'];
+export function setCorsHeaders(req, res) {
+  // 프로덕션 환경에서 Vercel 도메인들 자동 허용
+  const productionOrigins = [
+    'https://agent-world-quotation.vercel.app',
+    'https://agent-world-quotation-frontend.vercel.app',
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'http://127.0.0.1:5173',
+    'http://127.0.0.1:5174',
+  ];
 
-  const origin = allowedOrigins.includes('*')
-    ? '*'
-    : allowedOrigins[0]; // 간단하게 첫 번째 origin 사용
+  // 환경 변수에서 허용된 origin 가져오기
+  const envOrigins = process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim())
+    : [];
 
-  res.setHeader('Access-Control-Allow-Origin', origin);
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  // 모든 허용된 origin 목록 (환경 변수 + 프로덕션 origin)
+  const allowedOrigins = envOrigins.length > 0 
+    ? [...new Set([...envOrigins, ...productionOrigins])]
+    : productionOrigins;
+
+  // 요청의 Origin 헤더 가져오기
+  const requestOrigin = req.headers.origin;
+
+  // 허용된 origin 결정
+  let allowedOrigin = null;
+
+  if (requestOrigin) {
+    // 요청 origin이 허용 목록에 있으면 해당 origin 사용
+    if (allowedOrigins.includes(requestOrigin)) {
+      allowedOrigin = requestOrigin;
+    } else if (envOrigins.includes('*')) {
+      // 환경 변수에 *가 있으면 모든 origin 허용
+      allowedOrigin = requestOrigin;
+    }
+  }
+
+  // origin이 설정되지 않았고 환경 변수에 *가 있으면 요청 origin 허용
+  if (!allowedOrigin && envOrigins.includes('*') && requestOrigin) {
+    allowedOrigin = requestOrigin;
+  }
+
+  // origin이 여전히 없으면 기본값으로 첫 번째 프로덕션 origin 사용 (fallback)
+  if (!allowedOrigin && allowedOrigins.length > 0) {
+    allowedOrigin = allowedOrigins[0];
+  }
+
+  // 최종적으로 origin이 없으면 요청 origin 사용 (개발 환경 fallback)
+  if (!allowedOrigin && requestOrigin) {
+    allowedOrigin = requestOrigin;
+  }
+
+  // credentials를 사용할 때는 *를 사용할 수 없으므로, 실제 origin을 사용해야 함
+  // origin이 없으면 CORS 헤더를 설정하지 않음 (브라우저가 차단)
+  if (!allowedOrigin) {
+    return; // CORS 헤더를 설정하지 않음
+  }
+
+  res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Max-Age', '86400'); // 24시간
 }
 
@@ -21,6 +70,6 @@ export function setCorsHeaders(res) {
  * OPTIONS 요청 처리
  */
 export function handleOptions(req, res) {
-  setCorsHeaders(res);
+  setCorsHeaders(req, res);
   return res.status(204).end();
 }
