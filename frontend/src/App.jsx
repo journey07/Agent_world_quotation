@@ -24,9 +24,9 @@ const getApi3DUrl = () => {
   if (import.meta.env.VITE_API_3D_URL) {
     return import.meta.env.VITE_API_3D_URL;
   }
-  // 프로덕션 환경에서는 자동으로 백엔드 URL 사용
+  // 프로덕션 환경에서는 Render URL 사용 (3D 생성만 Render로 분리)
   if (import.meta.env.PROD || window.location.hostname.includes('vercel.app')) {
-    return 'https://agent-world-quotation-backend.vercel.app/api/quote';
+    return 'https://agent-world-quotation.onrender.com/api/quote';
   }
   // 개발 환경에서는 localhost 사용
   return 'http://localhost:3001/api/quote';
