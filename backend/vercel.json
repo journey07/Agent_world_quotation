@@ -2,33 +2,6 @@
   "version": 2,
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "regions": ["icn1"],
-  "headers": [
-    {
-      "source": "/api/quote/(.*)",
-      "headers": [
-        {
-          "key": "Access-Control-Allow-Origin",
-          "value": "https://agent-world-quotation.vercel.app"
-        },
-        {
-          "key": "Access-Control-Allow-Methods",
-          "value": "GET, POST, OPTIONS, PUT, DELETE"
-        },
-        {
-          "key": "Access-Control-Allow-Headers",
-          "value": "Content-Type, Authorization, X-Requested-With"
-        },
-        {
-          "key": "Access-Control-Allow-Credentials",
-          "value": "true"
-        },
-        {
-          "key": "Access-Control-Max-Age",
-          "value": "86400"
-        }
-      ]
-    }
-  ],
   "rewrites": [
     {
       "source": "/calculate",

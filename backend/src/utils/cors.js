@@ -24,8 +24,17 @@ export function setCorsHeaders(req, res) {
     : productionOrigins;
 
   // 요청의 Origin 헤더 가져오기 (Vercel 서버리스 함수 호환)
-  let requestOrigin = req.headers.origin || req.headers.Origin || 
-    (req.headers.referer ? new URL(req.headers.referer).origin : null);
+  let requestOrigin = req.headers.origin || req.headers.Origin;
+  
+  // referer에서 origin 추출 (에러 처리 포함)
+  if (!requestOrigin && req.headers.referer) {
+    try {
+      requestOrigin = new URL(req.headers.referer).origin;
+    } catch (e) {
+      // referer 파싱 실패 시 무시
+      requestOrigin = null;
+    }
+  }
   
   // Origin에서 슬래시 제거 (정규화)
   if (requestOrigin && requestOrigin.endsWith('/')) {
@@ -77,8 +86,17 @@ export function setCorsHeaders(req, res) {
  * OPTIONS 요청 처리
  */
 export function handleOptions(req, res) {
-  setCorsHeaders(req, res);
-  // Vercel 서버리스 함수에서는 200 상태 코드와 함께 응답
-  // 204는 일부 브라우저에서 헤더를 무시할 수 있음
-  return res.status(200).end();
+  try {
+    setCorsHeaders(req, res);
+    // Vercel 서버리스 함수에서는 200 상태 코드와 함께 응답
+    // 204는 일부 브라우저에서 헤더를 무시할 수 있음
+    return res.status(200).end();
+  } catch (err) {
+    // 에러 발생 시에도 CORS 헤더는 설정
+    console.error('CORS Options error:', err);
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+    return res.status(200).end();
+  }
 }
