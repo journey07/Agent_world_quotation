@@ -6,8 +6,34 @@ import DataSection from './components/DataSection';
 
 // 환경 변수에서 API URL 가져오기 (Vite는 import.meta.env 사용)
 // 기본 API는 Vercel, 3D 생성만 Render로 분리
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api/quote';
-const API_3D_URL = import.meta.env.VITE_API_3D_URL || 'http://localhost:3001/api/quote';
+const getApiUrl = () => {
+  // 환경 변수가 설정되어 있으면 사용
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+  // 프로덕션 환경에서는 자동으로 백엔드 URL 사용
+  if (import.meta.env.PROD || window.location.hostname.includes('vercel.app')) {
+    return 'https://agent-world-quotation-backend.vercel.app/api/quote';
+  }
+  // 개발 환경에서는 localhost 사용
+  return 'http://localhost:3001/api/quote';
+};
+
+const getApi3DUrl = () => {
+  // 환경 변수가 설정되어 있으면 사용
+  if (import.meta.env.VITE_API_3D_URL) {
+    return import.meta.env.VITE_API_3D_URL;
+  }
+  // 프로덕션 환경에서는 자동으로 백엔드 URL 사용
+  if (import.meta.env.PROD || window.location.hostname.includes('vercel.app')) {
+    return 'https://agent-world-quotation-backend.vercel.app/api/quote';
+  }
+  // 개발 환경에서는 localhost 사용
+  return 'http://localhost:3001/api/quote';
+};
+
+const API_URL = getApiUrl();
+const API_3D_URL = getApi3DUrl();
 
 function App() {
   const [formData, setFormData] = useState({
