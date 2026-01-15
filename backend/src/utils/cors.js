@@ -23,8 +23,13 @@ export function setCorsHeaders(req, res) {
     : productionOrigins;
 
   // 요청의 Origin 헤더 가져오기 (Vercel 서버리스 함수 호환)
-  const requestOrigin = req.headers.origin || req.headers.Origin || 
+  let requestOrigin = req.headers.origin || req.headers.Origin || 
     (req.headers.referer ? new URL(req.headers.referer).origin : null);
+  
+  // Origin에서 슬래시 제거 (정규화)
+  if (requestOrigin && requestOrigin.endsWith('/')) {
+    requestOrigin = requestOrigin.slice(0, -1);
+  }
 
   // 허용된 origin 결정
   let allowedOrigin = null;
@@ -63,6 +68,11 @@ export function setCorsHeaders(req, res) {
   // origin이 없으면 기본적으로 요청 origin 사용 (보안상 완벽하지 않지만 CORS 오류 방지)
   if (!allowedOrigin) {
     allowedOrigin = requestOrigin || productionOrigins[0] || '*';
+  }
+
+  // 최종 origin 정규화 (슬래시 제거)
+  if (allowedOrigin && allowedOrigin !== '*' && allowedOrigin.endsWith('/')) {
+    allowedOrigin = allowedOrigin.slice(0, -1);
   }
 
   // CORS 헤더 설정 (항상 설정)
