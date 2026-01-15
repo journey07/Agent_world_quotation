@@ -40,17 +40,43 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Request Logger Middleware
 app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  const userAgent = req.get('user-agent') || 'unknown';
+  const ip = req.ip || req.connection.remoteAddress || 'unknown';
+  const isUptimeRobot = userAgent.includes('UptimeRobot') || userAgent.includes('uptimerobot');
+  
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url} | IP: ${ip} | UA: ${userAgent.substring(0, 50)}${isUptimeRobot ? ' 🤖 UPTIMEROBOT' : ''}`);
   next();
 });
 
 // Routes
 app.use('/api/quote', quoteRoutes);
 
-// Health check
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
-});
+// Health check - GET and HEAD methods supported
+const healthCheckHandler = (req, res) => {
+  const userAgent = req.get('user-agent') || 'unknown';
+  const ip = req.ip || req.connection.remoteAddress || 'unknown';
+  const isUptimeRobot = userAgent.includes('UptimeRobot') || userAgent.includes('uptimerobot');
+  
+  if (isUptimeRobot) {
+    console.log(`✅ UptimeRobot ping received (${req.method}) from ${ip} at ${new Date().toISOString()}`);
+  }
+  
+  const responseData = { 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    source: isUptimeRobot ? 'uptimerobot' : 'other'
+  };
+  
+  // HEAD 요청은 body 없이 상태 코드만 반환
+  if (req.method === 'HEAD') {
+    res.status(200).end();
+  } else {
+    res.json(responseData);
+  }
+};
+
+app.get('/health', healthCheckHandler);
+app.head('/health', healthCheckHandler);
 
 // Error handler
 app.use((err, req, res, next) => {

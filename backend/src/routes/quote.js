@@ -422,10 +422,21 @@ router.post('/agent-status', async (req, res) => {
 /**
  * GET /api/quote/health
  * Basic health check for the backend
+ * Supports both GET and HEAD methods for monitoring services
  */
-router.get('/health', (req, res) => {
-    res.json({ status: 'ok', timestamp: new Date().toISOString() });
-});
+const healthCheckHandler = (req, res) => {
+    const responseData = { status: 'ok', timestamp: new Date().toISOString() };
+    
+    // HEAD 요청은 body 없이 상태 코드만 반환
+    if (req.method === 'HEAD') {
+        res.status(200).end();
+    } else {
+        res.json(responseData);
+    }
+};
+
+router.get('/health', healthCheckHandler);
+router.head('/health', healthCheckHandler);
 
 /**
  * POST /api/quote/verify-api
