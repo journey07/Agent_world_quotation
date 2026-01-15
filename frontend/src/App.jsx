@@ -112,6 +112,10 @@ function App() {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    
+    // Clear existing 3D image when generating new layout (it won't match the new layout)
+    setGeneratedImage(null);
+    setViewMode('2d');
 
     // Sync detailed location with installation background for 3D generation
     const updatedFormData = {
