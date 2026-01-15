@@ -85,6 +85,13 @@ function App() {
     }
   }, [formData.tiers, formData.controlPanelTiers]);
 
+  // Reset view mode to 2d when 3D image is cleared
+  useEffect(() => {
+    if (!generatedImage && viewMode === '3d') {
+      setViewMode('2d');
+    }
+  }, [generatedImage, viewMode]);
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({
@@ -114,8 +121,13 @@ function App() {
     setError(null);
     
     // Clear existing 3D image when generating new layout (it won't match the new layout)
-    setGeneratedImage(null);
-    setViewMode('2d');
+    // Must clear before any async operations to ensure UI updates immediately
+    if (generatedImage) {
+      setGeneratedImage(null);
+    }
+    if (viewMode !== '2d') {
+      setViewMode('2d');
+    }
 
     // Sync detailed location with installation background for 3D generation
     const updatedFormData = {
@@ -639,9 +651,9 @@ function App() {
               )}
 
               {/* Image Display */}
-              {viewMode === '2d' ? (
+              {viewMode === '2d' || !generatedImage ? (
                 previewImage ? (
-                  <img src={previewImage} alt="Locker 2D Preview" className="preview-image" />
+                  <img key="2d-preview" src={previewImage} alt="Locker 2D Preview" className="preview-image" />
                 ) : (
                   <div className="empty-preview">
                     <span>견적 생성 버튼을 눌러주세요</span>
@@ -649,7 +661,7 @@ function App() {
                 )
               ) : (
                 generatedImage ? (
-                  <img src={generatedImage} alt="Locker 3D Installation" className="preview-image" />
+                  <img key={`3d-${generatedImage.substring(0, 50)}`} src={generatedImage} alt="Locker 3D Installation" className="preview-image" />
                 ) : (
                   <div className="empty-preview">
                     <span>3D 설치 이미지를 생성해주세요</span>
