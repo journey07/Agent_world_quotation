@@ -3,12 +3,12 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "functions": {
     "api/**/*.js": {
-      "runtime": "nodejs20.x",
+      "runtime": "vercel/node@20.x",
       "memory": 1024,
       "maxDuration": 60
     },
     "api/quote/generate-3d-installation.js": {
-      "runtime": "nodejs20.x",
+      "runtime": "vercel/node@20.x",
       "memory": 2048,
       "maxDuration": 300
     }
