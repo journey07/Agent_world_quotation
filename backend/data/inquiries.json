@@ -1,0 +1,107 @@
+[
+  {
+    "id": 1767877582582,
+    "timestamp": "2026-01-08T13:06:22.582Z",
+    "columns": 5,
+    "tiers": 6,
+    "quantity": 1,
+    "controlPanelColumn": 1,
+    "controlPanelTiers": 3,
+    "options": {
+      "frameType": "fullSet",
+      "dualController": true,
+      "acrylic": false
+    },
+    "region": "seoul",
+    "installationBackground": "수영장 로비",
+    "companyName": "(주)미래디자인",
+    "contact": "010-1234-5678",
+    "email": "mirae@design.com",
+    "detailedLocation": "수영장 로비",
+    "summary": {
+      "subtotal": 5074000,
+      "quantity": 1,
+      "total": 5074000
+    }
+  },
+  {
+    "id": 1704739200002,
+    "timestamp": "2026-01-08T11:20:45.000Z",
+    "companyName": "현대마트 강남점",
+    "contact": "02-555-9000",
+    "email": "contact@hyundaimart.co.kr",
+    "region": "seoul",
+    "detailedLocation": "지하 1층 고객쉼터 옆",
+    "columns": 8,
+    "tiers": 4,
+    "quantity": 2,
+    "options": {
+      "frameType": "none",
+      "dualController": false,
+      "acrylic": true
+    },
+    "summary": {
+      "total": 5800000
+    }
+  },
+  {
+    "id": 1704739200003,
+    "timestamp": "2026-01-08T13:05:12.000Z",
+    "companyName": "스타헬스 클럽",
+    "contact": "010-9988-7766",
+    "email": "manager@starhealth.com",
+    "region": "gyeonggi",
+    "detailedLocation": "남성 탈의실 입구",
+    "columns": 4,
+    "tiers": 8,
+    "quantity": 1,
+    "options": {
+      "frameType": "sideOnly",
+      "dualController": false,
+      "acrylic": false
+    },
+    "summary": {
+      "total": 3100000
+    }
+  },
+  {
+    "id": 1704739200004,
+    "timestamp": "2026-01-08T14:45:00.000Z",
+    "companyName": "파크뷰 오피스텔",
+    "contact": "010-2233-4455",
+    "email": "parkview@mgmt.com",
+    "region": "incheon",
+    "detailedLocation": "1층 무인택배함 공간",
+    "columns": 10,
+    "tiers": 5,
+    "quantity": 1,
+    "options": {
+      "frameType": "topOnly",
+      "dualController": true,
+      "acrylic": true
+    },
+    "summary": {
+      "total": 7500000
+    }
+  },
+  {
+    "id": 1704739200005,
+    "timestamp": "2026-01-08T16:10:22.000Z",
+    "companyName": "카페 에이아이",
+    "contact": "010-1111-2222",
+    "email": "hello@cafeai.kr",
+    "region": "gangwon",
+    "detailedLocation": "정문 우측 카페 섹션",
+    "columns": 3,
+    "tiers": 3,
+    "quantity": 1,
+    "options": {
+      "frameType": "none",
+      "dualController": false,
+      "acrylic": false
+    },
+    "summary": {
+      "total": 1800000
+    }
+  }
+]

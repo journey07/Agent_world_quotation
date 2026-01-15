@@ -1,0 +1,25 @@
+{
+  "name": "locker-quote-backend",
+  "version": "1.0.0",
+  "description": "Backend API for locker manufacturer quoting tool",
+  "main": "src/index.js",
+  "type": "module",
+  "engines": {
+    "node": "20.x"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "dependencies": {
+    "@google/genai": "^1.34.0",
+    "canvas": "^3.2.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "exceljs": "^4.4.0",
+    "express": "^4.18.2",
+    "jimp": "^0.22.12",
+    "pdfkit": "^0.14.0",
+    "uuid": "^9.0.1"
+  }
+}

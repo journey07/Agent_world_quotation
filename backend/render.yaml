@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: world-quotation-backend
+    env: node
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: DASHBOARD_API_URL
+        sync: false
+        # Dashboard API URL 예: https://your-dashboard.vercel.app/api/stats
+      - key: ACCOUNT_EMAIL
+        sync: false
+        # 예: admin@worldlocker.com
+      - key: BASE_URL
+        sync: false
+        # 프로덕션 Backend URL: https://agent-world-quotation.onrender.com
+      - key: ALLOWED_ORIGINS
+        sync: false
+        # 예: https://your-frontend.vercel.app,https://your-frontend-*.vercel.app
+        # 또는 모든 origin 허용: *
