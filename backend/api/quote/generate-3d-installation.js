@@ -95,8 +95,19 @@ export default async function handler(req, res) {
   } catch (err) {
     const responseTime = Date.now() - startTime;
 
-    // Send error log
-    await sendActivityLog(`❌ 3D Generation Failed: ${err.message}`, 'error', responseTime);
+    // Check for API key leak error
+    const isApiKeyLeaked = err.message && err.message.includes('API_KEY_LEAKED');
+    
+    // Send error log with specific message for leaked keys
+    if (isApiKeyLeaked) {
+      await sendActivityLog(
+        '🔑 API Key Leaked: Please generate a new API key from Google AI Studio',
+        'error',
+        responseTime,
+      );
+    } else {
+      await sendActivityLog(`❌ 3D Generation Failed: ${err.message}`, 'error', responseTime);
+    }
 
     await trackApiCall('generate-3d-installation', responseTime, true);
 
@@ -104,6 +115,17 @@ export default async function handler(req, res) {
     await setAgentStatus('error');
 
     console.error('3D generation error:', err);
+    
+    // Return specific error for leaked API key
+    if (isApiKeyLeaked) {
+      return res.status(403).json({
+        error: 'API Key Leaked',
+        message: 'Your Gemini API key was reported as leaked and has been revoked.',
+        action: 'Please generate a new API key from Google AI Studio (https://aistudio.google.com/app/apikey) and update the GEMINI_API_KEY environment variable.',
+        details: err.message,
+      });
+    }
+
     return res.status(500).json({
       error: 'Failed to generate 3D visualization',
       details: err.message,

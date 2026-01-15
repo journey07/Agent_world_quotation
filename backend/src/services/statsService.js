@@ -135,13 +135,23 @@ export function startHeartbeat(port) {
     const baseUrl = process.env.BASE_URL || `http://localhost:${port}`;
     console.log(`💓 Registering Agent ${AGENT_ID} to Dashboard Brain at ${baseUrl}`);
 
-    // Send immediate registration request (once)
+    // Send immediate registration request (once) - 서버 시작 시 한 번만
     sendHeartbeat(baseUrl);
+}
+
+/**
+ * Send heartbeat manually (called from status check or other manual triggers)
+ */
+export async function sendManualHeartbeat(port) {
+    if (process.env.NODE_ENV === 'test') return;
+    
+    const baseUrl = process.env.BASE_URL || `http://localhost:${port}`;
+    await sendHeartbeat(baseUrl);
 }
 
 async function sendHeartbeat(baseUrl) {
     try {
-        await fetch(DASHBOARD_API_URL, {
+        const response = await fetch(DASHBOARD_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -155,7 +165,18 @@ async function sendHeartbeat(baseUrl) {
                 apiKey: process.env.GEMINI_API_KEY ? `sk-...${process.env.GEMINI_API_KEY.slice(-4)}` : 'sk-unknown'
             })
         });
+
+        if (response.ok) {
+            console.log(`💓 Heartbeat sent successfully`);
+        } else {
+            const errorText = await response.text().catch(() => 'Unknown error');
+            console.error(`❌ Heartbeat failed: ${response.status} ${response.statusText} - ${errorText}`);
+        }
     } catch (error) {
         // Silent fail for heartbeat to avoid cluttering logs if dashboard is down
+        // Only log if it's not a network error (dashboard might be down)
+        if (error.code !== 'ECONNREFUSED' && error.code !== 'ENOTFOUND') {
+            console.error(`❌ Heartbeat error: ${error.message}`);
+        }
     }
 }

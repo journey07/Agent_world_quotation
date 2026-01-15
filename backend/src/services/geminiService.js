@@ -134,11 +134,59 @@ Style: Clean, professional, architectural photography, 3D render, high resolutio
         console.error('Error message:', error.message);
         console.error('Error stack:', error.stack);
 
+        // Parse error object to check for leaked API key
+        let errorMessage = error.message || '';
+        let errorCode = null;
+        let errorStatus = null;
+
+        // Try to parse error message as JSON (sometimes Google API returns JSON string)
+        try {
+            if (typeof errorMessage === 'string' && errorMessage.startsWith('{')) {
+                const parsedError = JSON.parse(errorMessage);
+                if (parsedError.error) {
+                    errorCode = parsedError.error.code;
+                    errorStatus = parsedError.error.status;
+                    if (parsedError.error.message) {
+                        errorMessage = parsedError.error.message;
+                    }
+                }
+            }
+        } catch (parseError) {
+            // Not JSON, continue with original error message
+        }
+
+        // Check error object structure (Google API errors can be nested)
+        if (error.error) {
+            errorCode = error.error.code;
+            errorStatus = error.error.status;
+            if (error.error.message) {
+                errorMessage = error.error.message;
+            }
+        }
+
+        // Also check direct properties
+        if (error.code) errorCode = error.code;
+        if (error.status) errorStatus = error.status;
+
+        // Check for API key leak error (403 with "leaked" message)
+        const isLeakedError = 
+            (errorCode === 403 || errorStatus === 'PERMISSION_DENIED') &&
+            (errorMessage.toLowerCase().includes('leaked') || 
+             errorMessage.toLowerCase().includes('reported'));
+
+        if (isLeakedError) {
+            throw new Error(
+                'API_KEY_LEAKED: Your Gemini API key was reported as leaked and has been revoked. ' +
+                'Please generate a new API key from Google AI Studio (https://aistudio.google.com/app/apikey) ' +
+                'and update the GEMINI_API_KEY environment variable in your deployment settings.'
+            );
+        }
+
         if (error.response) {
             console.error('Error response:', JSON.stringify(error.response, null, 2));
         }
 
-        throw new Error(`Failed to generate 3D visualization: ${error.message}`);
+        throw new Error(`Failed to generate 3D visualization: ${errorMessage || error.message || 'Unknown error'}`);
     }
 }
 
