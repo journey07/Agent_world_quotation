@@ -1,5 +1,6 @@
 /**
  * CORS 헤더 설정 유틸리티
+ * 간헐적인 CORS 오류를 방지하기 위해 단순화된 로직 사용
  */
 export function setCorsHeaders(req, res) {
   // 프로덕션 환경에서 Vercel 도메인들 자동 허용
@@ -31,43 +32,32 @@ export function setCorsHeaders(req, res) {
     requestOrigin = requestOrigin.slice(0, -1);
   }
 
-  // 허용된 origin 결정
+  // 허용된 origin 결정 (단순화된 로직)
   let allowedOrigin = null;
 
-  if (requestOrigin) {
-    // 요청 origin이 허용 목록에 있으면 해당 origin 사용
-    if (allowedOrigins.includes(requestOrigin)) {
-      allowedOrigin = requestOrigin;
-    } else if (envOrigins.includes('*')) {
-      // 환경 변수에 *가 있으면 모든 origin 허용
-      allowedOrigin = requestOrigin;
-    }
-  }
-
-  // origin이 설정되지 않았고 환경 변수에 *가 있으면 요청 origin 허용
-  if (!allowedOrigin && envOrigins.includes('*') && requestOrigin) {
+  // 1. 요청 origin이 허용 목록에 있으면 사용
+  if (requestOrigin && allowedOrigins.includes(requestOrigin)) {
     allowedOrigin = requestOrigin;
   }
-
-  // origin이 여전히 없으면 기본값으로 첫 번째 프로덕션 origin 사용 (fallback)
-  if (!allowedOrigin && allowedOrigins.length > 0) {
-    allowedOrigin = allowedOrigins[0];
-  }
-
-  // 최종적으로 origin이 없으면 요청 origin 사용 (개발 환경 fallback)
-  if (!allowedOrigin && requestOrigin) {
+  // 2. 환경 변수에 *가 있으면 요청 origin 허용
+  else if (envOrigins.includes('*') && requestOrigin) {
     allowedOrigin = requestOrigin;
   }
-
-  // 프로덕션 origin이 요청 origin과 일치하면 허용 (추가 체크)
-  if (!allowedOrigin && requestOrigin && productionOrigins.includes(requestOrigin)) {
+  // 3. 요청 origin이 프로덕션 origin 중 하나와 일치하면 허용
+  else if (requestOrigin && productionOrigins.includes(requestOrigin)) {
     allowedOrigin = requestOrigin;
   }
-
-  // credentials를 사용할 때는 *를 사용할 수 없으므로, 실제 origin을 사용해야 함
-  // origin이 없으면 기본적으로 요청 origin 사용 (보안상 완벽하지 않지만 CORS 오류 방지)
-  if (!allowedOrigin) {
-    allowedOrigin = requestOrigin || productionOrigins[0] || '*';
+  // 4. 요청 origin이 있지만 허용 목록에 없으면, 프로덕션 환경에서는 기본 origin 사용
+  else if (requestOrigin && requestOrigin.includes('vercel.app')) {
+    allowedOrigin = productionOrigins[0]; // 기본 프로덕션 origin
+  }
+  // 5. 요청 origin이 localhost면 허용 (개발 환경)
+  else if (requestOrigin && requestOrigin.includes('localhost')) {
+    allowedOrigin = requestOrigin;
+  }
+  // 6. fallback: 첫 번째 프로덕션 origin 사용
+  else {
+    allowedOrigin = productionOrigins[0] || requestOrigin || '*';
   }
 
   // 최종 origin 정규화 (슬래시 제거)
@@ -75,7 +65,7 @@ export function setCorsHeaders(req, res) {
     allowedOrigin = allowedOrigin.slice(0, -1);
   }
 
-  // CORS 헤더 설정 (항상 설정)
+  // CORS 헤더 설정 (항상 설정 - 간헐적 오류 방지)
   res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
@@ -88,6 +78,7 @@ export function setCorsHeaders(req, res) {
  */
 export function handleOptions(req, res) {
   setCorsHeaders(req, res);
-  // Vercel 서버리스 함수에서는 .end() 대신 .json() 또는 .send() 사용
-  return res.status(204).send('');
+  // Vercel 서버리스 함수에서는 200 상태 코드와 함께 응답
+  // 204는 일부 브라우저에서 헤더를 무시할 수 있음
+  return res.status(200).end();
 }
