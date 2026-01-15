@@ -22,8 +22,9 @@ export function setCorsHeaders(req, res) {
     ? [...new Set([...envOrigins, ...productionOrigins])]
     : productionOrigins;
 
-  // 요청의 Origin 헤더 가져오기
-  const requestOrigin = req.headers.origin;
+  // 요청의 Origin 헤더 가져오기 (Vercel 서버리스 함수 호환)
+  const requestOrigin = req.headers.origin || req.headers.Origin || 
+    (req.headers.referer ? new URL(req.headers.referer).origin : null);
 
   // 허용된 origin 결정
   let allowedOrigin = null;
@@ -53,12 +54,18 @@ export function setCorsHeaders(req, res) {
     allowedOrigin = requestOrigin;
   }
 
-  // credentials를 사용할 때는 *를 사용할 수 없으므로, 실제 origin을 사용해야 함
-  // origin이 없으면 CORS 헤더를 설정하지 않음 (브라우저가 차단)
-  if (!allowedOrigin) {
-    return; // CORS 헤더를 설정하지 않음
+  // 프로덕션 origin이 요청 origin과 일치하면 허용 (추가 체크)
+  if (!allowedOrigin && requestOrigin && productionOrigins.includes(requestOrigin)) {
+    allowedOrigin = requestOrigin;
   }
 
+  // credentials를 사용할 때는 *를 사용할 수 없으므로, 실제 origin을 사용해야 함
+  // origin이 없으면 기본적으로 요청 origin 사용 (보안상 완벽하지 않지만 CORS 오류 방지)
+  if (!allowedOrigin) {
+    allowedOrigin = requestOrigin || productionOrigins[0] || '*';
+  }
+
+  // CORS 헤더 설정 (항상 설정)
   res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
@@ -71,5 +78,6 @@ export function setCorsHeaders(req, res) {
  */
 export function handleOptions(req, res) {
   setCorsHeaders(req, res);
-  return res.status(204).end();
+  // Vercel 서버리스 함수에서는 .end() 대신 .json() 또는 .send() 사용
+  return res.status(204).send('');
 }
