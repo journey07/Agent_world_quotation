@@ -57,7 +57,7 @@ echo ""
 echo "✅ 완료!"
 echo ""
 echo "🔍 확인: 히스토리에서 키 검색..."
-if git log --all --full-history -p -S "AIzaSyAHVTA7-9gasYw_il_XrDKTpySyFxZRW6Q" | grep -q "AIzaSy"; then
+if git log --all --full-history -p -S "YOUR_LEAKED_API_KEY" | grep -q "YOUR_LEAKED"; then
     echo "❌ 아직 키가 남아있습니다!"
 else
     echo "✅ 키가 완전히 제거되었습니다!"

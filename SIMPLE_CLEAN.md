@@ -61,7 +61,7 @@ git gc --prune=now --aggressive
 ### 4단계: 확인
 ```bash
 # 키가 완전히 제거되었는지 확인
-git log --all --full-history -p -S "AIzaSyAHVTA7-9gasYw_il_XrDKTpySyFxZRW6Q"
+git log --all --full-history -p -S "YOUR_LEAKED_API_KEY"
 # 결과가 없어야 합니다!
 ```
 

@@ -44,7 +44,7 @@ git gc --prune=now --aggressive
 java -jar bfg.jar --replace-text passwords.txt backend/src/services/geminiService.js
 
 # passwords.txt 내용:
-# AIzaSyAHVTA7-9gasYw_il_XrDKTpySyFxZRW6Q==>GEMINI_API_KEY_REMOVED
+# YOUR_LEAKED_API_KEY==>GEMINI_API_KEY_REMOVED
 ```
 
 ### 방법 3: 새 저장소로 마이그레이션 (가장 안전)
