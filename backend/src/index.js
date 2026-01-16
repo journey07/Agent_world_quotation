@@ -11,8 +11,11 @@ const PORT = process.env.PORT || 3001;
 // Middleware
 // CORS 설정: 개발 환경과 프로덕션 환경 모두 지원
 const allowedOrigins = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(',')
+  ? process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim())
   : [
+      'https://agent-world-quotation.vercel.app',
+      'https://agent-world-quotation-frontend.vercel.app',
+      'https://wl-agent1.supersquad.kr',
       'http://localhost:5174',
       'http://localhost:5173',
       'http://127.0.0.1:5174',
@@ -25,14 +28,22 @@ app.use(
       // origin이 없으면 (같은 도메인 요청 등) 허용
       if (!origin) return callback(null, true);
       
-      // 허용된 origin인지 확인
-      if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+      // origin 정규화 (슬래시 제거)
+      const normalizedOrigin = origin.endsWith('/') ? origin.slice(0, -1) : origin;
+      
+      // 허용된 origin인지 확인 (정규화된 origin과 비교)
+      const normalizedAllowedOrigins = allowedOrigins.map(o => o.endsWith('/') ? o.slice(0, -1) : o);
+      
+      if (normalizedAllowedOrigins.includes(normalizedOrigin) || normalizedAllowedOrigins.includes('*')) {
         callback(null, true);
       } else {
+        console.warn(`CORS blocked origin: ${normalizedOrigin}. Allowed origins:`, normalizedAllowedOrigins);
         callback(new Error('Not allowed by CORS'));
       }
     },
     credentials: true,
+    methods: ['GET', 'POST', 'OPTIONS', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   })
 );
 app.use(express.json({ limit: '50mb' })); // Increase limit for large base64 images

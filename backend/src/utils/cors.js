@@ -7,6 +7,7 @@ export function setCorsHeaders(req, res) {
   const productionOrigins = [
     'https://agent-world-quotation.vercel.app',
     'https://agent-world-quotation-frontend.vercel.app',
+    'https://wl-agent1.supersquad.kr',
     'http://localhost:5173',
     'http://localhost:5174',
     'http://127.0.0.1:5173',
