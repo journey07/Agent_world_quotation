@@ -130,7 +130,10 @@ h1 {
 .tab-buttons-center {
   display: flex;
   justify-content: center;
+  align-items: center;
+  gap: 16px;
   margin-bottom: 12px;
+  flex-wrap: wrap;
 }
 
 .tab-buttons {
@@ -142,6 +145,126 @@ h1 {
   border: 1px solid var(--border-color);
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
   position: relative;
+}
+
+/* Stylish Toggle Switch */
+.workflow-mode-toggle {
+  display: flex;
+  align-items: center;
+}
+
+.config-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  width: 100%;
+}
+
+.config-header-row h2 {
+  margin-bottom: 0;
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.toggle-container {
+  display: flex;
+  position: relative;
+  background: #f1f5f9;
+  border-radius: 12px;
+  padding: 4px;
+  border: 1px solid var(--border-color);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  user-select: none;
+}
+
+.toggle-option {
+  position: relative;
+  z-index: 2;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  transition: all 0.3s ease;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.toggle-option svg {
+  width: 16px;
+  height: 16px;
+  transition: all 0.3s ease;
+}
+
+.toggle-option.active {
+  color: var(--text-main);
+}
+
+.toggle-slider {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: calc(50% - 4px);
+  height: calc(100% - 8px);
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+  z-index: 1;
+}
+
+/* Move slider to right for Manual mode (Auto is default left) */
+.toggle-slider.manual-mode {
+  transform: translateX(100%);
+  background: white;
+}
+
+/* Auto mode style (Left default) */
+.toggle-slider.auto-mode {
+  transform: translateX(0);
+  background: white;
+  box-shadow: 0 4px 6px -1px rgba(30, 58, 138, 0.1);
+}
+
+/* Animated Flowing Border for Auto Mode */
+.toggle-slider.auto-mode::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  border-radius: 10px;
+  background: linear-gradient(90deg, #3b82f6, #60a5fa, #3b82f6);
+  /* Brighter Blue Gradient */
+  background-size: 200% 100%;
+  z-index: -1;
+  animation: border-flow 2s linear infinite;
+}
+
+@keyframes border-flow {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
+.toggle-option:hover:not(.active) {
+  color: var(--primary);
+}
+
+/* Ensure text is standard dark when active (both modes are white bg now) */
+.toggle-option.active {
+  color: var(--text-main);
+  transition: color 0.3s ease;
 }
 
 .tab-btn {

@@ -1,0 +1,490 @@
+/* WorkflowModal - NEXT LEVEL DESIGN (Premium Glassmorphism) */
+
+/* Overlay */
+.workflow-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(8, 11, 22, 0.4);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: overlayAppear 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes overlayAppear {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+  }
+
+  to {
+    opacity: 1;
+    backdrop-filter: blur(16px);
+  }
+}
+
+/* Modal Container */
+.workflow-modal {
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 32px;
+  width: 480px;
+  max-width: 90%;
+  box-shadow:
+    0 40px 60px -10px rgba(0, 0, 0, 0.1),
+    0 24px 30px -15px rgba(0, 0, 0, 0.05),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  animation: modalPop 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+  font-family: 'Inter', -apple-system, sans-serif;
+  color: #1e293b;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0;
+  /* Padding handled by children */
+}
+
+@keyframes modalPop {
+  0% {
+    opacity: 0;
+    transform: translateY(40px) scale(0.95);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Decorative Glows */
+.modal-glow {
+  position: absolute;
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.4;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.modal-glow-1 {
+  background: #3b82f6;
+  top: -100px;
+  left: -100px;
+  animation: floatGlow 8s ease-in-out infinite alternate;
+}
+
+.modal-glow-2 {
+  background: #818cf8;
+  bottom: -100px;
+  right: -100px;
+  animation: floatGlow 10s ease-in-out infinite alternate-reverse;
+}
+
+@keyframes floatGlow {
+  0% {
+    transform: translate(0, 0);
+  }
+
+  100% {
+    transform: translate(30px, 30px);
+  }
+}
+
+/* Close Button */
+.workflow-modal-close {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #64748b;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  z-index: 10;
+}
+
+.workflow-modal-close:hover {
+  background: rgba(255, 255, 255, 0.9);
+  color: #0f172a;
+  transform: rotate(90deg) scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Hero Section */
+.workflow-hero-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 56px 40px 32px 40px;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+/* Hero Icon */
+.workflow-hero-icon-container {
+  width: 96px;
+  height: 96px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 28px;
+  color: #3b82f6;
+  /* Primary Color */
+}
+
+.hero-icon-svg {
+  width: 48px;
+  height: 48px;
+  z-index: 2;
+  filter: drop-shadow(0 4px 6px rgba(59, 130, 246, 0.3));
+}
+
+.hero-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.hero-ring-1 {
+  width: 100%;
+  height: 100%;
+  border-top-color: #3b82f6;
+  border-left-color: #3b82f6;
+  opacity: 0.8;
+}
+
+.hero-ring-1.spinning {
+  animation: ringSpin 2s linear infinite;
+}
+
+.hero-ring-2 {
+  width: 70%;
+  height: 70%;
+  border: 2px solid rgba(59, 130, 246, 0.1);
+}
+
+@keyframes ringSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Icon Animations */
+.pulse-part {
+  animation: pulse 1.5s ease-in-out infinite;
+  transform-origin: center;
+}
+
+.draw-part {
+  stroke-dasharray: 40;
+  stroke-dashoffset: 40;
+  animation: drawLine 2s ease infinite;
+}
+
+.rotate-part {
+  transform-origin: center;
+  animation: slightRotate 4s ease-in-out infinite;
+}
+
+.rotate-part-inner {
+  transform-origin: center;
+  animation: slightRotate 4s ease-in-out infinite reverse;
+}
+
+.check-part {
+  stroke-dasharray: 10;
+  stroke-dashoffset: 10;
+  animation: drawCheck 0.6s ease forwards;
+}
+
+@keyframes pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.5;
+    transform: scale(0.9);
+  }
+}
+
+@keyframes drawLine {
+  0% {
+    stroke-dashoffset: 40;
+  }
+
+  50% {
+    stroke-dashoffset: 0;
+  }
+
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}
+
+@keyframes slightRotate {
+  0% {
+    transform: rotate(-5deg);
+  }
+
+  50% {
+    transform: rotate(5deg);
+  }
+
+  100% {
+    transform: rotate(-5deg);
+  }
+}
+
+@keyframes drawCheck {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Header Text */
+.workflow-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 8px 0;
+  letter-spacing: -0.02em;
+}
+
+.workflow-desc {
+  font-size: 15px;
+  color: #64748b;
+  margin: 0;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+/* Global Progress Bar */
+.workflow-global-progress {
+  width: 100%;
+  height: 6px;
+  background: #f1f5f9;
+  position: relative;
+}
+
+.progress-track {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6, #6366f1);
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.5);
+  transition: width 0.3s linear;
+  border-radius: 0 4px 4px 0;
+}
+
+/* Timeline Section */
+.workflow-timeline {
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+  padding: 32px 40px 48px 40px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.timeline-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  flex: 1;
+  z-index: 1;
+}
+
+/* Connectors */
+.timeline-connector {
+  position: absolute;
+  top: 9px;
+  left: 50%;
+  width: 100%;
+  height: 2px;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.connector-line {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: #e2e8f0;
+}
+
+.connector-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  background: #3b82f6;
+  transition: width 0.4s ease;
+  width: 0%;
+}
+
+/* Dots */
+.timeline-dot-wrapper {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+  position: relative;
+}
+
+.timeline-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #cbd5e1;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Active State */
+.timeline-item.active .timeline-dot {
+  width: 20px;
+  height: 20px;
+  background: #3b82f6;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
+}
+
+.dot-pulse {
+  width: 8px;
+  height: 8px;
+  background: white;
+  border-radius: 50%;
+}
+
+/* Completed State */
+.timeline-item.completed .timeline-dot {
+  width: 20px;
+  height: 20px;
+  background: #3b82f6;
+}
+
+.check-icon {
+  width: 12px;
+  height: 12px;
+  color: white;
+}
+
+/* Completed Connector Logic */
+.timeline-item.completed+.timeline-item.completed .connector-fill,
+.timeline-item.completed+.timeline-item.active .connector-fill {
+  width: 100%;
+  /* Ideally handle next connector fill */
+}
+
+/* Note: CSS selector for previous sibling is not possible. 
+   The React logic handles this by filling the bar if the *current* item is completed?
+   Wait, the connector is rendered inside the item, pointing to *next*.
+   So if *this* item is completed, the connector *starting from* it should be filled?
+   Actually, usually we fill up to the active step.
+   Let's check the JSX logic:
+   status depends on step.id < currentStep.
+   So if step 1 is done, step 1's connector (to step 2) should be filled.
+*/
+.timeline-item.completed .connector-fill {
+  width: 100%;
+}
+
+/* Text Content */
+.timeline-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 2px;
+}
+
+.step-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #94a3b8;
+  transition: color 0.3s ease;
+  white-space: nowrap;
+}
+
+.step-sub {
+  font-size: 11px;
+  color: #cbd5e1;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: all 0.3s ease;
+}
+
+/* Active Text */
+.timeline-item.active .step-name {
+  color: #0f172a;
+  transform: translateY(-2px);
+}
+
+.timeline-item.active .step-sub {
+  opacity: 1;
+  transform: translateY(0);
+  color: #64748b;
+}
+
+.timeline-item.completed .step-name {
+  color: #3b82f6;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .workflow-modal {
+    width: 94%;
+    padding-bottom: 24px;
+  }
+
+  .workflow-timeline {
+    padding: 24px 20px;
+    gap: 16px;
+  }
+
+  .step-name {
+    font-size: 11px;
+  }
+
+  .step-sub {
+    font-size: 9px;
+  }
+}

@@ -4,6 +4,9 @@ import './index.css';
 import Loader from './components/Loader';
 import DataSection from './components/DataSection';
 
+import WorkflowModal from './components/WorkflowModal';
+import NumberStepper from './components/NumberStepper';
+
 // 환경 변수에서 API URL 가져오기 (Vite는 import.meta.env 사용)
 // 기본 API는 Vercel, 3D 생성만 Render로 분리
 const getApiUrl = () => {
@@ -68,6 +71,37 @@ function App() {
   const [inquiries, setInquiries] = useState([]);
   const resultSectionRef = useRef(null);
 
+  // 새로운 워크플로우 관련 상태 (기존 상태는 그대로 유지)
+  const [workflowMode, setWorkflowMode] = useState('auto'); // 'auto' | 'manual'
+  const [isWorkflowRunning, setIsWorkflowRunning] = useState(false);
+  const [workflowComplete, setWorkflowComplete] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+
+  // 최신 상태를 추적하기 위한 ref
+  const stateRef = useRef({
+    loading,
+    generating3D,
+    result,
+    previewImage,
+    generatedImage,
+    error
+  });
+
+  // 워크플로우 취소 플래그
+  const workflowCancelRef = useRef(false);
+
+  // 상태가 변경될 때마다 ref 업데이트
+  useEffect(() => {
+    stateRef.current = {
+      loading,
+      generating3D,
+      result,
+      previewImage,
+      generatedImage,
+      error
+    };
+  }, [loading, generating3D, result, previewImage, generatedImage, error]);
+
   // Ensure control panel column is valid when total columns change
   useEffect(() => {
     if (formData.controlPanelColumn > formData.columns) {
@@ -111,6 +145,13 @@ function App() {
     }));
   };
 
+  const handleStepperChange = (name, value) => {
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
   const handleColumnSelect = (colIndex) => {
     setFormData(prev => ({ ...prev, controlPanelColumn: colIndex }));
   };
@@ -119,7 +160,7 @@ function App() {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    
+
     // Clear existing 3D image when generating new layout (it won't match the new layout)
     // Must clear before any async operations to ensure UI updates immediately
     if (generatedImage) {
@@ -238,7 +279,11 @@ function App() {
   }, []);
 
   const handleDownloadExcel = async (force = false) => {
-    if (!generatedImage && !force) {
+    // stateRef를 통해 최신 상태 확인 (비동기 상태 업데이트 문제 해결)
+    const currentGeneratedImage = stateRef.current.generatedImage || generatedImage;
+    const currentPreviewImage = stateRef.current.previewImage || previewImage;
+
+    if (!currentGeneratedImage && !force) {
       setShowThreeDWarning(true);
       return;
     }
@@ -250,8 +295,8 @@ function App() {
     try {
       const requestData = {
         ...formData,
-        previewImage: previewImage || null,
-        generatedImage: generatedImage || null
+        previewImage: currentPreviewImage || null,
+        generatedImage: currentGeneratedImage || null
       };
 
       const res = await fetch(`${API_URL}/excel`, {
@@ -291,7 +336,10 @@ function App() {
   };
 
   const handleGenerate3D = async () => {
-    if (!previewImage) {
+    // stateRef를 통해 최신 previewImage 확인 (비동기 상태 업데이트 문제 해결)
+    const currentPreviewImage = stateRef.current.previewImage || previewImage;
+
+    if (!currentPreviewImage) {
       setError('먼저 2D 미리보기를 생성해주세요.');
       return;
     }
@@ -301,7 +349,7 @@ function App() {
 
     try {
       // Extract base64 data from data URL
-      const base64Data = previewImage.split(',')[1];
+      const base64Data = currentPreviewImage.split(',')[1];
 
       // 3D 생성은 Render로 요청 (타임아웃 100분)
       const res = await fetch(`${API_3D_URL}/generate-3d-installation`, {
@@ -318,22 +366,265 @@ function App() {
       });
 
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || '3D 이미지 생성 실패');
+        const errorData = await res.json().catch(() => ({}));
+        const errorMessage = errorData.error || errorData.message || '3D 이미지 생성 실패';
+        const errorDetails = errorData.details || errorData.action || '';
+        const fullErrorMessage = errorDetails
+          ? `${errorMessage}\n\n${errorDetails}`
+          : errorMessage;
+        console.error('3D generation API error:', {
+          status: res.status,
+          error: errorData.error,
+          message: errorData.message,
+          details: errorData.details,
+          action: errorData.action
+        });
+        throw new Error(fullErrorMessage);
       }
 
       const data = await res.json();
+      if (!data.image) {
+        throw new Error('3D 이미지 데이터가 응답에 없습니다.');
+      }
       setGeneratedImage(`data:image/png;base64,${data.image}`);
       setViewMode('3d');
     } catch (err) {
       console.error('3D generation error:', err);
-      setError(err.message);
+      // 에러 메시지가 여러 줄이면 첫 번째 줄만 표시하고 나머지는 콘솔에 출력
+      const errorLines = err.message.split('\n');
+      setError(errorLines[0]);
+      if (errorLines.length > 1) {
+        console.error('상세 에러 정보:', errorLines.slice(1).join('\n'));
+      }
     } finally {
       setGenerating3D(false);
     }
   };
 
   const formatPrice = (num) => `₩${num.toLocaleString('ko-KR')}`;
+
+  // 자동 워크플로우 실행 함수 (기존 함수들을 순차 호출만 함)
+  const executeAutoWorkflow = async () => {
+    setIsWorkflowRunning(true);
+    setWorkflowComplete(false);
+    setError(null);
+    workflowCancelRef.current = false; // 취소 플래그 초기화
+
+    try {
+      console.log('🚀 자동 워크플로우 시작');
+
+      // Step 1: 견적 계산 + 2D 미리보기 (기존 handleSubmit 호출)
+      const submitEvent = { preventDefault: () => { } };
+      await handleSubmit(submitEvent);
+
+      console.log('📊 Step 1 실행 완료, previewImage 생성 대기 중...');
+
+      // Step 1 완료 대기 (previewImage가 생성될 때까지)
+      // previewImage가 설정되는 것이 가장 확실한 완료 신호
+      let waitCount = 0;
+      const maxWait = 100; // 최대 10초 대기
+      while (waitCount < maxWait) {
+        // 취소 확인
+        if (workflowCancelRef.current) {
+          console.log('⚠️ 워크플로우 취소됨 (Step 1)');
+          return;
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 100));
+        waitCount++;
+
+        // ref를 통해 최신 상태 확인 - previewImage만 체크 (가장 확실한 완료 신호)
+        const currentState = stateRef.current;
+        if (currentState.previewImage) {
+          console.log('✅ Step 1 완료! previewImage 생성됨:', currentState.previewImage.substring(0, 50) + '...');
+          break;
+        }
+
+        // 디버깅용 로그
+        if (waitCount % 10 === 0) {
+          console.log(`⏳ 대기 중... (${waitCount * 100}ms) - previewImage: ${currentState.previewImage ? '있음' : '없음'}, loading: ${currentState.loading}`);
+        }
+      }
+
+      // 취소 확인
+      if (workflowCancelRef.current) {
+        console.log('⚠️ 워크플로우 취소됨 (Step 1 완료 후)');
+        return;
+      }
+
+      // Step 1 결과 확인
+      const step1State = stateRef.current;
+      if (!step1State.previewImage) {
+        console.error('❌ Step 1 실패 - previewImage가 생성되지 않음');
+        throw new Error('2D 레이아웃 생성에 실패했습니다.');
+      }
+
+      // 취소 확인
+      if (workflowCancelRef.current) {
+        console.log('⚠️ 워크플로우 취소됨 (Step 2 시작 전)');
+        return;
+      }
+
+      console.log('🎨 Step 2 시작: 3D 이미지 생성');
+
+      // Step 2: 3D 이미지 생성 (기존 handleGenerate3D 호출)
+      // handleGenerate3D는 에러를 catch하므로, 에러 발생 여부를 확인하기 위해
+      // 실행 전 에러 상태를 저장
+      const errorBefore3D = stateRef.current.error;
+      await handleGenerate3D();
+
+      // 취소 확인
+      if (workflowCancelRef.current) {
+        console.log('⚠️ 워크플로우 취소됨 (Step 2 실행 후)');
+        return;
+      }
+
+      console.log('📊 Step 2 실행 완료, generatedImage 생성 대기 중...');
+
+      // Step 2 완료 대기 (generatedImage가 생성될 때까지)
+      // generatedImage가 설정되는 것이 가장 확실한 완료 신호
+      waitCount = 0;
+      const maxWait3D = 600; // 최대 60초 대기 (3D 생성은 오래 걸림)
+      let hasError = false;
+
+      while (waitCount < maxWait3D) {
+        // 취소 확인
+        if (workflowCancelRef.current) {
+          console.log('⚠️ 워크플로우 취소됨 (Step 2 대기 중)');
+          return;
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 100));
+        waitCount++;
+
+        // ref를 통해 최신 상태 확인
+        const currentState = stateRef.current;
+
+        // 에러가 발생했는지 확인
+        // generating3D가 false이고 generatedImage가 없고, 에러가 있으면 에러로 간주
+        if (!currentState.generating3D && !currentState.generatedImage && waitCount > 5) {
+          // 0.5초 이상 기다렸는데 generating3D가 false이고 generatedImage가 없으면 에러 가능성
+          // 에러 메시지가 설정되었는지 확인
+          if (currentState.error && currentState.error !== errorBefore3D) {
+            hasError = true;
+            console.warn('⚠️ 3D 생성 중 에러 발생:', currentState.error);
+            break;
+          }
+        }
+
+        // generatedImage가 생성되었으면 완료
+        if (currentState.generatedImage) {
+          console.log('✅ Step 2 완료! generatedImage 생성됨:', currentState.generatedImage.substring(0, 50) + '...');
+          break;
+        }
+
+        // 디버깅용 로그
+        if (waitCount % 30 === 0) {
+          console.log(`⏳ 3D 생성 대기 중... (${waitCount * 100}ms) - generating3D: ${currentState.generating3D}, generatedImage: ${currentState.generatedImage ? '있음' : '없음'}, error: ${currentState.error || '없음'}`);
+        }
+      }
+
+      // 취소 확인
+      if (workflowCancelRef.current) {
+        console.log('⚠️ 워크플로우 취소됨 (Step 2 완료 후)');
+        return;
+      }
+
+      // Step 2 결과 확인
+      const step2State = stateRef.current;
+      if (!step2State.generatedImage) {
+        if (hasError) {
+          console.warn('⚠️ Step 2 실패 - 3D 이미지 생성 중 에러 발생');
+          // 3D 생성 실패해도 워크플로우는 완료로 처리 (2D는 있으므로)
+          // 에러 메시지는 이미 handleGenerate3D에서 설정됨
+        } else {
+          console.warn('⚠️ Step 2 타임아웃 - generatedImage가 생성되지 않음 (타임아웃)');
+          if (!step2State.error) {
+            setError('3D 이미지 생성이 시간 초과되었습니다. 2D 레이아웃은 생성되었습니다.');
+          }
+        }
+      }
+
+      // 취소 확인
+      if (workflowCancelRef.current) {
+        console.log('⚠️ 워크플로우 취소됨 (Step 3 시작 전)');
+        return;
+      }
+
+      console.log('📄 Step 3 시작: 견적서 다운로드');
+
+      // Step 3: 견적서 다운로드 (force=true로 호출하여 3D 이미지 없어도 다운로드)
+      // 3D 이미지가 있으면 포함하고, 없으면 2D만 포함하여 다운로드
+      await handleDownloadExcel(true);
+
+      // 취소 확인
+      if (workflowCancelRef.current) {
+        console.log('⚠️ 워크플로우 취소됨 (Step 3 실행 후)');
+        return;
+      }
+
+      // Step 3 완료 대기 (generatingExcel이 false가 될 때까지)
+      waitCount = 0;
+      const maxWaitExcel = 60; // 최대 6초 대기
+      while (waitCount < maxWaitExcel) {
+        // 취소 확인
+        if (workflowCancelRef.current) {
+          console.log('⚠️ 워크플로우 취소됨 (Step 3 대기 중)');
+          return;
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 100));
+        waitCount++;
+
+        const currentState = stateRef.current;
+        if (!currentState.generatingExcel) {
+          console.log('✅ Step 3 완료! 견적서 다운로드 완료');
+          break;
+        }
+      }
+
+      // 취소 확인
+      if (workflowCancelRef.current) {
+        console.log('⚠️ 워크플로우 취소됨 (Step 3 완료 후)');
+        return;
+      }
+
+      // 완료
+      setWorkflowComplete(true);
+      console.log('🎉 자동 워크플로우 완료!');
+
+      // 결과 섹션으로 스크롤
+      setTimeout(() => {
+        if (resultSectionRef.current) {
+          resultSectionRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 500);
+    } catch (err) {
+      console.error('❌ Auto workflow error:', err);
+      setError(err.message || '자동 워크플로우 실행 중 오류가 발생했습니다.');
+    } finally {
+      setIsWorkflowRunning(false);
+    }
+  };
+
+  // 재생성 함수 (기존 함수들 재호출)
+  const handleRegenerate = async () => {
+    setIsEditMode(false);
+    await executeAutoWorkflow();
+  };
+
+  // 수정 모드로 전환
+  const handleEdit = () => {
+    setIsEditMode(true);
+    if (resultSectionRef.current) {
+      resultSectionRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  // 3D 이미지만 재생성 (기존 handleGenerate3D 재호출)
+  const handleRegenerate3D = async () => {
+    await handleGenerate3D();
+  };
 
   // Generate column visualizer
   const renderColumnSelector = () => {
@@ -390,6 +681,8 @@ function App() {
             문의내역
           </button>
         </div>
+
+
       </div>
 
       {/* Excel Generation Loading Modal */}
@@ -415,34 +708,68 @@ function App() {
         <div className="grid-container">
           {/* Left: Configuration Form */}
           <div className="glass-card config-panel">
-            <h2>
-              <div className="icon-box">⚙️</div>
-              보관함 구성
-            </h2>
+            <div className="config-header-row">
+              <h2>
+                <div className="icon-box">⚙️</div>
+                보관함 구성
+              </h2>
+
+              <div className="workflow-mode-toggle">
+                <div className="toggle-container">
+                  <div
+                    className={`toggle-option ${workflowMode === 'auto' ? 'active' : ''}`}
+                    onClick={() => !isWorkflowRunning && setWorkflowMode('auto')}
+                    style={{ cursor: isWorkflowRunning ? 'not-allowed' : 'pointer', opacity: isWorkflowRunning ? 0.6 : 1 }}
+                    title="자동 모드: 버튼 한 번으로 견적서까지 완성"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M12 2C10.3431 2 9 3.34315 9 5V6H5C3.89543 6 3 6.89543 3 8V18C3 19.1046 3.89543 20 5 20H19C20.1046 20 21 19.1046 21 18V8C21 6.89543 20.1046 6 19 6H15V5C15 3.34315 13.6569 2 12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M9 12V14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M15 12V14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M9 17H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    자동
+                  </div>
+                  <div
+                    className={`toggle-option ${workflowMode === 'manual' ? 'active' : ''}`}
+                    onClick={() => !isWorkflowRunning && setWorkflowMode('manual')}
+                    style={{ cursor: isWorkflowRunning ? 'not-allowed' : 'pointer', opacity: isWorkflowRunning ? 0.6 : 1 }}
+                    title="수동 모드: 사용자가 직접 확인 후 진행"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M12 11C14.2091 11 16 9.20914 16 7C16 4.79086 14.2091 3 12 3C9.79086 3 8 4.79086 8 7C8 9.20914 9.79086 11 12 11Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M6 21V19C6 17.9391 6.42143 16.9217 7.17157 16.1716C7.92172 15.4214 8.93913 15 10 15H14C15.0609 15 16.0783 15.4214 16.8284 16.1716C17.5786 16.9217 18 17.9391 18 19V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    수동
+                  </div>
+                  <div className={`toggle-slider ${workflowMode === 'auto' ? 'auto-mode' : 'manual-mode'}`} />
+                </div>
+              </div>
+            </div>
 
             <form onSubmit={handleSubmit}>
               <div className="form-section-title">함 구성</div>
-              <div className="input-row-split">
-                <div className="form-group">
-                  <label>열 (Columns)</label>
-                  <input
-                    type="number"
+              <div className="input-row-split" style={{ marginBottom: '40px' }}>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <NumberStepper
+                    label="열 (Column)"
                     name="columns"
                     value={formData.columns}
-                    onChange={handleChange}
-                    min="1"
-                    max="20"
+                    onChange={handleStepperChange}
+                    min={1}
+                    max={20}
+                    suffix="열"
                   />
                 </div>
-                <div className="form-group">
-                  <label>단 (Tiers)</label>
-                  <input
-                    type="number"
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <NumberStepper
+                    label="단 (Box)"
                     name="tiers"
                     value={formData.tiers}
-                    onChange={handleChange}
-                    min="1"
-                    max="10"
+                    onChange={handleStepperChange}
+                    min={1}
+                    max={10}
+                    suffix="단"
                   />
                 </div>
               </div>
@@ -455,28 +782,28 @@ function App() {
                 </div>
               </div>
 
-              <div className="form-group">
-                <label>제어부 단수 (Control Panel Tiers)</label>
-                <input
-                  type="number"
-                  name="controlPanelTiers"
-                  value={formData.controlPanelTiers}
-                  onChange={handleChange}
-                  min="1"
-                  max={Math.max(1, formData.tiers - 2)}
-                />
-
-              </div>
-
-              <div className="form-group">
-                <label>세트 수 (Set)</label>
-                <input
-                  type="number"
-                  name="quantity"
-                  value={formData.quantity}
-                  onChange={handleChange}
-                  min="1"
-                />
+              <div className="input-row-split">
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <NumberStepper
+                    label="제어부 단수"
+                    name="controlPanelTiers"
+                    value={formData.controlPanelTiers}
+                    onChange={handleStepperChange}
+                    min={1}
+                    max={Math.max(1, formData.tiers - 2)}
+                    suffix="단"
+                  />
+                </div>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <NumberStepper
+                    label="제어부 세트 수 (Set)"
+                    name="quantity"
+                    value={formData.quantity}
+                    onChange={handleStepperChange}
+                    min={1}
+                    suffix="세트"
+                  />
+                </div>
               </div>
 
               <div className="form-section-title">프레임 옵션</div>
@@ -610,9 +937,27 @@ function App() {
                 />
               </div>
 
-              <button type="submit" className="btn-primary" disabled={loading}>
-                {loading ? '계산 중...' : '레이아웃 & 견적 생성'}
-              </button>
+              {workflowMode === 'auto' ? (
+                <button
+                  type="button"
+                  className="btn-primary"
+                  onClick={executeAutoWorkflow}
+                  disabled={isWorkflowRunning || loading || generating3D}
+                >
+                  {isWorkflowRunning ? (
+                    <>
+                      <span className="btn-spinner"></span>
+                      자동 생성 중...
+                    </>
+                  ) : (
+                    '🚀 견적서 만들기'
+                  )}
+                </button>
+              ) : (
+                <button type="submit" className="btn-primary" disabled={loading}>
+                  {loading ? '계산 중...' : '레이아웃 & 견적 생성'}
+                </button>
+              )}
             </form>
           </div>
 
@@ -622,6 +967,7 @@ function App() {
               <div className="icon-box">🖊️</div>
               레이아웃 & 견적
             </h2>
+
 
             <div className="preview-stage">
               {/* View Mode Toggle */}
@@ -831,6 +1177,9 @@ function App() {
               </div>
             )}
 
+            {/* 완성된 견적서 확인 및 수정 패널 */}
+
+
             {/* 3D Warning Modal */}
             {showThreeDWarning && (
               <div className="excel-loading-modal" style={{ zIndex: 1000 }}>
@@ -895,6 +1244,27 @@ function App() {
       ) : (
         <DataSection inquiries={inquiries} onApplyInquiry={handleApplyInquiry} />
       )}
+
+      {/* 워크플로우 진행 상태 모달 */}
+      <WorkflowModal
+        loading={loading}
+        generating3D={generating3D}
+        generatingExcel={generatingExcel}
+        result={result}
+        previewImage={previewImage}
+        generatedImage={generatedImage}
+        workflowMode={workflowMode}
+        isWorkflowRunning={isWorkflowRunning}
+        workflowComplete={workflowComplete}
+        onClose={() => {
+          // 모달 닫을 때 워크플로우 취소
+          if (isWorkflowRunning) {
+            workflowCancelRef.current = true;
+            setIsWorkflowRunning(false);
+            setWorkflowComplete(false);
+          }
+        }}
+      />
     </div>
   );
 }
