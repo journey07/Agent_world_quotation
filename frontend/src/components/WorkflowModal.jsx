@@ -114,7 +114,7 @@ function WorkflowModal({
       return { step: 4, totalSteps: 4, title: '견적서 작성 중', message: '최종 견적서를 생성하고 있습니다.', status: 'processing' };
     }
     if (generating3D) {
-      return { step: 3, totalSteps: 4, title: '3D 렌더링 중', message: '설치 이미지를 시각화하고 있습니다. (약 20초)', status: 'processing' };
+      return { step: 3, totalSteps: 4, title: '3D 렌더링 중', message: '설치 이미지를 시각화하고 있습니다.', status: 'processing' };
     }
     if (loading || (isWorkflowRunning && currentStep === 1)) {
       return { step: 1, totalSteps: 4, title: '데이터 분석 중', message: '요구사항을 분석하고 최적의 구성을 계산합니다.', status: 'processing' };

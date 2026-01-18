@@ -84,7 +84,11 @@ function App() {
     result,
     previewImage,
     generatedImage,
-    error
+    result,
+    previewImage,
+    generatedImage,
+    error,
+    formData
   });
 
   // 워크플로우 취소 플래그
@@ -100,7 +104,7 @@ function App() {
       generatedImage,
       error
     };
-  }, [loading, generating3D, result, previewImage, generatedImage, error]);
+  }, [loading, generating3D, result, previewImage, generatedImage, error, formData]);
 
   // Ensure control panel column is valid when total columns change
   useEffect(() => {
@@ -351,17 +355,23 @@ function App() {
       // Extract base64 data from data URL
       const base64Data = currentPreviewImage.split(',')[1];
 
-      // 3D 생성은 Render로 요청 (타임아웃 100분)
+      // stateRef.current.formData를 사용하여 최신 상태 보장
+      const currentFormData = stateRef.current.formData || formData;
+
+      // 3D 생성 시 설치 장소(detailedLocation)가 있으면 그것을 최우선으로 사용
+      // handleSubmit에서 업데이트된 state가 아직 반영되지 않았을 경우를 대비하여 명시적으로 확인
+      const finalInstallationBackground = currentFormData.detailedLocation || currentFormData.installationBackground;
+
       const res = await fetch(`${API_3D_URL}/generate-3d-installation`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           image: base64Data,
           mimeType: 'image/png',
-          frameType: formData.options.frameType,
-          columns: formData.columns,
-          tiers: formData.tiers,
-          installationBackground: formData.installationBackground
+          frameType: currentFormData.options.frameType,
+          columns: currentFormData.columns,
+          tiers: currentFormData.tiers,
+          installationBackground: finalInstallationBackground
         })
       });
 
@@ -717,7 +727,7 @@ function App() {
               <div className="workflow-mode-toggle">
                 <div className="toggle-container">
                   <div
-                    className={`toggle-option ${workflowMode === 'auto' ? 'active' : ''}`}
+                    className={`toggle-option ${workflowMode === 'auto' ? 'active auto-active' : ''}`}
                     onClick={() => !isWorkflowRunning && setWorkflowMode('auto')}
                     style={{ cursor: isWorkflowRunning ? 'not-allowed' : 'pointer', opacity: isWorkflowRunning ? 0.6 : 1 }}
                     title="자동 모드: 버튼 한 번으로 견적서까지 완성"
@@ -728,7 +738,7 @@ function App() {
                       <path d="M15 12V14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                       <path d="M9 17H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
-                    자동
+                    <span>자동</span>
                   </div>
                   <div
                     className={`toggle-option ${workflowMode === 'manual' ? 'active' : ''}`}

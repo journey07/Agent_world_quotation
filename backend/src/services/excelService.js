@@ -2,6 +2,7 @@ import ExcelJS from 'exceljs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import fs from 'fs';
+import Jimp from 'jimp';
 import { getCompanyInfo, getTerms } from './pricingService.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -126,29 +127,123 @@ async function createCoverSheet(workbook, quoteData, imageBase64, customerInfo, 
     sheet.getRow(rowIndex).height = 5;
     
     // 3D Installation Image Section (No title, just image)
-    rowIndex = 11;
+    // 한 행 아래로 이동 (11 -> 12)
+    rowIndex = 12;
     
     // Add 3D Image (Very Large - dominates the page)
     if (imageBase64) {
         try {
+            // Get image dimensions to preserve aspect ratio
+            const imageBuffer = Buffer.from(imageBase64, 'base64');
+            const image = await Jimp.read(imageBuffer);
+            const imageWidth = image.bitmap.width;
+            const imageHeight = image.bitmap.height;
+            const aspectRatio = imageWidth / imageHeight;
+            
+            // Calculate available space
+            // B열(1)부터 G열(7)까지 = 6개 열, 각 열 너비 15 (Excel 단위)
+            // Excel에서 열 너비 1 = 약 7픽셀 (대략적)
+            const availableWidth = 6 * 15 * 7; // 약 630 픽셀
+            const maxHeight = 28 * 20 * 1.33; // 28행 * 20 높이 * 1.33 (행 높이를 픽셀로 변환)
+            
+            // Calculate size maintaining aspect ratio
+            let displayWidth = availableWidth;
+            let displayHeight = displayWidth / aspectRatio;
+            
+            // If height exceeds max, scale down
+            if (displayHeight > maxHeight) {
+                displayHeight = maxHeight;
+                displayWidth = displayHeight * aspectRatio;
+            }
+            
+            // B~G열의 실제 너비 계산 및 중앙 정렬
+            // ExcelJS에서 col은 1-based이고 소수점 지원 (B=1, C=2, D=3, E=4, F=5, G=6)
+            // Excel 열 너비는 문자 단위이며, 포인트 변환: 너비 * 7.2 (Calibri 11pt 기준)
+            
+            // B~G열의 실제 너비 가져오기 (ExcelJS는 1-based: A=1, B=2, C=3, ...)
+            let totalColumnWidthInPoints = 0;
+            const columnWidths = [];
+            for (let colIdx = 2; colIdx <= 7; colIdx++) { // B=2, C=3, D=4, E=5, F=6, G=7
+                const col = sheet.getColumn(colIdx);
+                const colWidth = col.width || 15; // 설정된 너비 또는 기본값 15
+                columnWidths.push({ col: colIdx, width: colWidth });
+                totalColumnWidthInPoints += colWidth * 7.2;
+            }
+            
+            // 이미지 너비를 B~G열 전체 너비의 90%로 설정 (좌우 5%씩 여백)
+            const targetImageWidth = totalColumnWidthInPoints * 0.9;
+            const targetImageHeight = targetImageWidth / aspectRatio;
+            
+            const widthInPoints = targetImageWidth;
+            const heightInPoints = targetImageHeight;
+            
+            // 중앙 정렬 계산
+            // B~G열의 중앙: B=1, G=6이므로 중앙은 col: 3.5
+            // 이미지 너비를 열 단위로 변환
+            const avgColumnWidthInPoints = totalColumnWidthInPoints / 6; // 평균 열 너비
+            const columnsSpanned = widthInPoints / avgColumnWidthInPoints; // 이미지가 차지하는 열 수
+            
+            // 중앙 정렬: 시작 열 = 중앙 - (이미지 열 수 / 2)
+            // B~G열의 중앙은 col: 3.5 (B=1과 G=6의 중앙)
+            const centerCol = 3.5;
+            const startCol = centerCol - (columnsSpanned / 2);
+            
+            // 최소값 보정: B열(col: 1)보다 작으면 안 됨
+            const finalStartCol = Math.max(1, startCol);
+            
+            // 디버깅 로그
+            console.log('3D Image centering calculation:', {
+                imageWidth: imageWidth,
+                imageHeight: imageHeight,
+                aspectRatio: aspectRatio.toFixed(2),
+                columnWidths: columnWidths.map(c => `${String.fromCharCode(64 + c.col)}=${c.width}`).join(', '),
+                totalColumnWidthInPoints: totalColumnWidthInPoints.toFixed(2),
+                avgColumnWidthInPoints: avgColumnWidthInPoints.toFixed(2),
+                targetImageWidth: targetImageWidth.toFixed(2),
+                widthInPoints: widthInPoints.toFixed(2),
+                heightInPoints: heightInPoints.toFixed(2),
+                columnsSpanned: columnsSpanned.toFixed(2),
+                centerCol: centerCol,
+                calculatedStartCol: startCol.toFixed(2),
+                finalStartCol: finalStartCol.toFixed(2)
+            });
+            
             const imageId = workbook.addImage({
                 base64: imageBase64,
                 extension: 'png',
             });
             
-            // Place image spanning B11:G40 (huge area for 3D image)
+            // Place image centered with fixed size maintaining aspect ratio
             sheet.addImage(imageId, {
-                tl: { col: 1, row: rowIndex },
-                br: { col: 7, row: rowIndex + 28 }
+                tl: { col: finalStartCol, row: rowIndex },
+                ext: { width: widthInPoints, height: heightInPoints }
             });
             
-            // Set rows height to accommodate image
-            for (let i = rowIndex; i <= rowIndex + 28; i++) {
+            // Set rows height to accommodate image (calculate based on actual height)
+            const rowsNeeded = Math.ceil(heightInPoints / 20); // 20 is row height in points
+            for (let i = rowIndex; i <= rowIndex + rowsNeeded; i++) {
                 sheet.getRow(i).height = 20;
             }
-            rowIndex += 28;
+            rowIndex += rowsNeeded;
         } catch (err) {
             console.error('Error adding 3D image:', err);
+            // Fallback to original method if image processing fails
+            try {
+                const imageId = workbook.addImage({
+                    base64: imageBase64,
+                    extension: 'png',
+                });
+                sheet.addImage(imageId, {
+                    tl: { col: 1, row: rowIndex },
+                    br: { col: 7, row: rowIndex + 28 }
+                });
+                for (let i = rowIndex; i <= rowIndex + 28; i++) {
+                    sheet.getRow(i).height = 20;
+                }
+                rowIndex += 28;
+            } catch (fallbackErr) {
+                console.error('Fallback image insertion also failed:', fallbackErr);
+            }
         }
     }
     
