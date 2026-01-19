@@ -38,15 +38,19 @@ export default async function handler(req, res) {
       frameType || 'none'
     })`;
 
+    // Extract user name from header
+    const userName = req.headers['x-user-name'] || null;
+
     // preview 이미지는 Task 로는 카운트하지 않던 기존 로직 유지
-    await trackApiCall('preview-image', Date.now() - startTime, false, false, false, logMsg);
+    await trackApiCall('preview-image', Date.now() - startTime, false, false, false, logMsg, userName);
 
     return res.status(200).json({
       image: base64,
       mimeType: 'image/png',
     });
   } catch (err) {
-    await trackApiCall('preview-image', Date.now() - startTime, true, false, true);
+    const userName = req.headers['x-user-name'] || null;
+    await trackApiCall('preview-image', Date.now() - startTime, true, false, true, null, userName);
     return res.status(500).json({ error: err.message || 'Internal server error' });
   }
 }

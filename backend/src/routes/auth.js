@@ -1,6 +1,7 @@
 import express from 'express'
 import { loginWithUsername, verifySession } from '../services/authService.js'
 import { setCorsHeaders, handleOptions } from '../utils/cors.js'
+import { sendActivityLog } from '../services/statsService.js'
 
 const router = express.Router()
 
@@ -38,6 +39,20 @@ router.post('/login', async (req, res) => {
 
     if (!result.success) {
       return res.status(401).json(result)
+    }
+
+    // 로그인 성공 시 Dashboard로 로그 전송
+    if (result.user) {
+      const userName = result.user.name || result.user.username || 'Unknown'
+      sendActivityLog(
+        `User login: ${userName} (${result.user.username})`,
+        'success',
+        0,
+        userName
+      ).catch(err => {
+        // 로그 전송 실패는 무시 (비동기 처리)
+        console.error('Failed to send login log to dashboard:', err.message)
+      })
     }
 
     // 로그인 성공

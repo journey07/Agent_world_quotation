@@ -4,6 +4,7 @@ import cors from 'cors';
 import quoteRoutes from './routes/quote.js';
 import authRoutes from './routes/auth.js';
 import { startHeartbeat } from './services/statsService.js';
+import { extractUserMiddleware } from './utils/userMiddleware.js';
 
 
 const app = express();
@@ -57,6 +58,9 @@ app.use(
 );
 app.use(express.json({ limit: '50mb' })); // Increase limit for large base64 images
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+// 사용자 정보 추출 미들웨어 (모든 라우트 전에 적용)
+app.use(extractUserMiddleware);
 
 // Request Logger Middleware
 app.use((req, res, next) => {

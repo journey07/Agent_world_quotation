@@ -105,10 +105,13 @@ export default async function handler(req, res) {
     if (customerName) quote.customerName = customerName;
     if (deliveryLocation) quote.deliveryLocation = deliveryLocation;
 
+    // Extract user name from header
+    const userName = req.headers['x-user-name'] || null;
+
     // base64 형식 요청 여부
     if (req.query?.format === 'base64') {
       const base64 = await generateQuotePDFBase64(quote);
-      await trackApiCall('pdf', Date.now() - startTime, false, false, true);
+      await trackApiCall('pdf', Date.now() - startTime, false, false, true, null, userName);
 
       return res.status(200).json({
         pdf: base64,
@@ -125,12 +128,13 @@ export default async function handler(req, res) {
       `attachment; filename="quote-${Date.now()}.pdf"`,
     );
 
-    await trackApiCall('pdf', Date.now() - startTime, false, false, true);
+    await trackApiCall('pdf', Date.now() - startTime, false, false, true, null, userName);
 
     return res.status(200).send(pdfBuffer);
   } catch (err) {
     console.error('PDF generation error:', err);
-    await trackApiCall('pdf', Date.now() - startTime, true, false, true);
+    const userName = req.headers['x-user-name'] || null;
+    await trackApiCall('pdf', Date.now() - startTime, true, false, true, null, userName);
     return res.status(500).json({ error: err.message || 'Internal server error' });
   }
 }

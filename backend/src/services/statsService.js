@@ -7,8 +7,15 @@ const DASHBOARD_API_URL = process.env.DASHBOARD_API_URL || 'http://localhost:500
 
 /**
  * Track an API call by reporting to the central Dashboard Brain
+ * @param {string} apiType - Type of API call
+ * @param {number} responseTime - Response time in ms
+ * @param {boolean} isError - Whether the call resulted in an error
+ * @param {boolean} shouldCountApi - Whether to count as API call
+ * @param {boolean} shouldCountTask - Whether to count as task
+ * @param {string} logMessage - Optional log message
+ * @param {string} userName - Optional user name (from users table name column)
  */
-export async function trackApiCall(apiType, responseTime = 0, isError = false, shouldCountApi = true, shouldCountTask = true, logMessage = null) {
+export async function trackApiCall(apiType, responseTime = 0, isError = false, shouldCountApi = true, shouldCountTask = true, logMessage = null, userName = null) {
     try {
         const response = await fetch(DASHBOARD_API_URL, {
             method: 'POST',
@@ -25,7 +32,8 @@ export async function trackApiCall(apiType, responseTime = 0, isError = false, s
                 model: MODEL_NAME,
                 account: process.env.ACCOUNT_EMAIL || 'admin@worldlocker.com',
                 apiKey: process.env.GEMINI_API_KEY ? `sk-...${process.env.GEMINI_API_KEY.slice(-4)}` : 'sk-unknown',
-                logMessage: logMessage
+                logMessage: logMessage,
+                userName: userName
             }),
         });
 
@@ -50,8 +58,9 @@ export async function trackApiCall(apiType, responseTime = 0, isError = false, s
  * @param {string} action - Human-readable action description
  * @param {string} logType - Type of log: 'info', 'success', 'error', 'warning'
  * @param {number} responseTime - Optional response time in ms
+ * @param {string} userName - Optional user name (from users table name column)
  */
-export async function sendActivityLog(action, logType = 'info', responseTime = 0) {
+export async function sendActivityLog(action, logType = 'info', responseTime = 0, userName = null) {
     try {
         const response = await fetch(DASHBOARD_API_URL, {
             method: 'POST',
@@ -67,7 +76,8 @@ export async function sendActivityLog(action, logType = 'info', responseTime = 0
                 shouldCountApi: false,
                 shouldCountTask: false,
                 model: MODEL_NAME,
-                account: process.env.ACCOUNT_EMAIL || 'admin@worldlocker.com'
+                account: process.env.ACCOUNT_EMAIL || 'admin@worldlocker.com',
+                userName: userName
             }),
         });
 

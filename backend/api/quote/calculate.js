@@ -113,9 +113,12 @@ export default async function handler(req, res) {
     // Create descriptive log message
     const summary = `Calculated Quote: ${quote.input.columns}x${quote.input.tiers} Set:${quote.breakdown.quantity} ${quote.summary.total.toLocaleString()}KRW`;
 
+    // Extract user name from header
+    const userName = req.headers['x-user-name'] || null;
+
     // Log and count as Task (Interactive feedback) - 에러 발생해도 계속 진행
     try {
-      await trackApiCall('calculate', Date.now() - startTime, false, false, true, summary);
+      await trackApiCall('calculate', Date.now() - startTime, false, false, true, summary, userName);
     } catch (logErr) {
       console.error('Logging error (non-fatal):', logErr);
     }

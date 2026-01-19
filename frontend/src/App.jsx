@@ -38,6 +38,19 @@ const getApi3DUrl = () => {
 const API_URL = getApiUrl();
 const API_3D_URL = getApi3DUrl();
 
+/**
+ * 사용자 정보를 포함한 헤더 생성
+ * @param {Object} user - 사용자 정보 객체
+ * @returns {Object} 헤더 객체
+ */
+function getHeadersWithUser(user) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (user && user.name) {
+    headers['X-User-Name'] = user.name;
+  }
+  return headers;
+}
+
 function App({ user, onLogout }) {
   // user가 없으면 로그인 페이지로 리다이렉트 (안전장치)
   useEffect(() => {
@@ -191,7 +204,7 @@ function App({ user, onLogout }) {
       // Calculate price
       const calcRes = await fetch(`${API_URL}/calculate`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getHeadersWithUser(user),
         body: JSON.stringify(updatedFormData)
       });
 
@@ -205,7 +218,7 @@ function App({ user, onLogout }) {
       // Get preview image with frame overlay
       const imgRes = await fetch(`${API_URL}/preview-image`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getHeadersWithUser(user),
         body: JSON.stringify({
           columns: formData.columns,
           tiers: formData.tiers,
@@ -267,7 +280,10 @@ function App({ user, onLogout }) {
 
   const fetchInquiries = async (signal) => {
     try {
-      const res = await fetch(`${API_URL}/inquiries`, { signal });
+      const res = await fetch(`${API_URL}/inquiries`, { 
+        signal,
+        headers: getHeadersWithUser(user)
+      });
       if (res.ok) {
         const data = await res.json();
         setInquiries(data);
@@ -311,7 +327,7 @@ function App({ user, onLogout }) {
 
       const res = await fetch(`${API_URL}/excel`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getHeadersWithUser(user),
         body: JSON.stringify(requestData)
       });
 
@@ -370,7 +386,7 @@ function App({ user, onLogout }) {
 
       const res = await fetch(`${API_3D_URL}/generate-3d-installation`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getHeadersWithUser(user),
         body: JSON.stringify({
           image: base64Data,
           mimeType: 'image/png',

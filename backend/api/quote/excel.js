@@ -123,6 +123,9 @@ export default async function handler(req, res) {
       ? generatedImage.replace(/^data:image\/\w+;base64,/, '')
       : null;
 
+    // Extract user name from header
+    const userName = req.headers['x-user-name'] || null;
+
     // base64 형식 요청 여부
     if (req.query?.format === 'base64') {
       const base64 = await generateQuoteExcelBase64(
@@ -141,6 +144,7 @@ export default async function handler(req, res) {
         `Generated Excel Quote for ${companyName || 'Unknown Company'} (${quote.input.columns}x${quote.input.tiers}) ${
           generatedImage ? 'with 3D Image' : ''
         }`,
+        userName,
       );
 
       return res.status(200).json({
@@ -173,12 +177,13 @@ export default async function handler(req, res) {
       has3D ? 'with 3D Image' : ''
     }`;
 
-    await trackApiCall('excel', Date.now() - startTime, false, false, true, logMsg);
+    await trackApiCall('excel', Date.now() - startTime, false, false, true, logMsg, userName);
 
     return res.status(200).send(excelBuffer);
   } catch (err) {
     console.error('Excel generation error:', err);
-    await trackApiCall('excel', Date.now() - startTime, true, false, true);
+    const userName = req.headers['x-user-name'] || null;
+    await trackApiCall('excel', Date.now() - startTime, true, false, true, null, userName);
     return res.status(500).json({ error: err.message || 'Internal server error' });
   }
 }

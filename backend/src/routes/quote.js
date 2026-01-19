@@ -94,7 +94,7 @@ router.post('/calculate', async (req, res) => {
         const summary = `Calculated Quote: ${quote.input.columns}x${quote.input.tiers} Set:${quote.breakdown.quantity} ${quote.summary.total.toLocaleString()}KRW`;
 
         // Log and count as Task (Interactive feedback)
-        trackApiCall('calculate', Date.now() - startTime, false, false, true, summary);
+        trackApiCall('calculate', Date.now() - startTime, false, false, true, summary, req.userName || null);
 
         res.json(quote);
     } catch (err) {
@@ -166,12 +166,12 @@ router.post('/pdf', async (req, res) => {
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename="quote-${Date.now()}.pdf"`);
         // Log activity, count as Task, not API Call
-        trackApiCall('pdf', Date.now() - startTime, false, false, true);
+        trackApiCall('pdf', Date.now() - startTime, false, false, true, null, req.userName || null);
 
         res.send(pdfBuffer);
     } catch (err) {
         console.error('PDF generation error:', err);
-        trackApiCall('pdf', Date.now() - startTime, true, false, true);
+        trackApiCall('pdf', Date.now() - startTime, true, false, true, null, req.userName || null);
         res.status(500).json({ error: err.message });
     }
 });
@@ -246,12 +246,12 @@ router.post('/excel', async (req, res) => {
         const logMsg = `Generated Excel Quote for ${companyName || 'Unknown Company'} (${quote.input.columns}x${quote.input.tiers}) ${has3D ? 'with 3D Image' : ''}`;
 
         // Log activity, count as Task
-        trackApiCall('excel', Date.now() - startTime, false, false, true, logMsg);
+        trackApiCall('excel', Date.now() - startTime, false, false, true, logMsg, req.userName || null);
 
         res.send(excelBuffer);
     } catch (err) {
         console.error('Excel generation error:', err);
-        trackApiCall('excel', Date.now() - startTime, true, false, true);
+        trackApiCall('excel', Date.now() - startTime, true, false, true, null, req.userName || null);
         res.status(500).json({ error: err.message });
     }
 });
@@ -283,14 +283,14 @@ router.post('/preview-image', async (req, res) => {
         const logMsg = `Generated 2D Preview for ${columns}x${tiers} Locker (Frame: ${frameType || 'none'})`;
 
         // Log activity, don't count as Task (Calculate handled it)
-        trackApiCall('preview-image', Date.now() - startTime, false, false, false, logMsg);
+        trackApiCall('preview-image', Date.now() - startTime, false, false, false, logMsg, req.userName || null);
 
         res.json({
             image: base64,
             mimeType: 'image/png'
         });
     } catch (err) {
-        trackApiCall('preview-image', Date.now() - startTime, true, false, true);
+        trackApiCall('preview-image', Date.now() - startTime, true, false, true, null, req.userName || null);
         res.status(500).json({ error: err.message });
     }
 });
@@ -309,8 +309,10 @@ router.post('/generate-3d-installation', async (req, res) => {
             return res.status(400).json({ error: 'Image data is required' });
         }
 
+        const userName = req.userName || null;
+
         // Send start log
-        sendActivityLog('🎨 Starting 3D Installation Image Generation', 'info');
+        sendActivityLog('🎨 Starting 3D Installation Image Generation', 'info', 0, userName);
 
         // Set status to processing
         setAgentStatus('processing');
@@ -325,18 +327,18 @@ router.post('/generate-3d-installation', async (req, res) => {
             'library': 'Library Lounge'
         };
         const bgText = backgroundMap[installationBackground] || installationBackground || 'Default Background';
-        sendActivityLog(`🖼️ Requested Background: ${bgText}`, 'info');
+        sendActivityLog(`🖼️ Requested Background: ${bgText}`, 'info', 0, userName);
 
         // Calculate and log image size
         if (image) {
             // Base64 string length * 0.75 is approx byte size
             const sizeInBytes = image.length * 0.75;
             const sizeInMB = (sizeInBytes / (1024 * 1024)).toFixed(2);
-            sendActivityLog(`📊 Image Size: ${sizeInMB} MB`, 'info');
+            sendActivityLog(`📊 Image Size: ${sizeInMB} MB`, 'info', 0, userName);
         }
 
         // Send API call log
-        sendActivityLog('⏳ Calling Gemini API...', 'info');
+        sendActivityLog('⏳ Calling Gemini API...', 'info', 0, userName);
 
         // Generate 3D visualization using Gemini API
         const generated3DImage = await generate3DInstallation(image, mimeType || 'image/png', frameType || 'none', columns, tiers, installationBackground);
@@ -344,10 +346,10 @@ router.post('/generate-3d-installation', async (req, res) => {
         const responseTime = Date.now() - startTime;
 
         // Send completion log
-        sendActivityLog(`✅ 3D Generation Completed (${(responseTime / 1000).toFixed(1)}s)`, 'success', responseTime);
+        sendActivityLog(`✅ 3D Generation Completed (${(responseTime / 1000).toFixed(1)}s)`, 'success', responseTime, userName);
 
         // Track API call (this is the main 3D generation task)
-        trackApiCall('generate-3d-installation', responseTime, false);
+        trackApiCall('generate-3d-installation', responseTime, false, true, true, null, userName);
 
         // Set status back to online
         setAgentStatus('online');
@@ -359,11 +361,12 @@ router.post('/generate-3d-installation', async (req, res) => {
         });
     } catch (err) {
         const responseTime = Date.now() - startTime;
+        const userName = req.userName || null;
 
         // Send error log
-        sendActivityLog(`❌ 3D Generation Failed: ${err.message}`, 'error', responseTime);
+        sendActivityLog(`❌ 3D Generation Failed: ${err.message}`, 'error', responseTime, userName);
 
-        trackApiCall('generate-3d-installation', responseTime, true);
+        trackApiCall('generate-3d-installation', responseTime, true, true, true, null, userName);
 
         // Set status to error
         setAgentStatus('error');
