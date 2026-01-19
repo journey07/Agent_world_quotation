@@ -1,14 +1,14 @@
 import { useState } from 'react'
 import './Login.css'
 
-// API URL 가져오기
+// API URL 가져오기 (Vercel Backend 사용)
 const getApiUrl = () => {
   if (import.meta.env.VITE_API_URL) {
     return import.meta.env.VITE_API_URL.replace('/api/quote', '').replace('/api/auth', '')
   }
-  // 프로덕션 환경에서는 Render 백엔드 URL 사용
+  // 프로덕션 환경에서는 Vercel Backend URL 사용
   if (import.meta.env.PROD || window.location.hostname.includes('vercel.app') || window.location.hostname.includes('supersquad.kr')) {
-    return 'https://agent-world-quotation.onrender.com'
+    return 'https://world-quotation-backend.vercel.app'
   }
   return 'http://localhost:3001'
 }

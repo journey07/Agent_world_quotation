@@ -8,15 +8,15 @@ import WorkflowModal from './components/WorkflowModal';
 import NumberStepper from './components/NumberStepper';
 
 // 환경 변수에서 API URL 가져오기 (Vite는 import.meta.env 사용)
-// 프로덕션에서는 Render 백엔드 사용
+// 프로덕션에서는 Vercel Backend 사용 (일반 API)
 const getApiUrl = () => {
   // 환경 변수가 설정되어 있으면 사용
   if (import.meta.env.VITE_API_URL) {
     return import.meta.env.VITE_API_URL;
   }
-  // 프로덕션 환경에서는 Render 백엔드 URL 사용
+  // 프로덕션 환경에서는 Vercel Backend URL 사용
   if (import.meta.env.PROD || window.location.hostname.includes('vercel.app') || window.location.hostname.includes('supersquad.kr')) {
-    return 'https://agent-world-quotation.onrender.com/api/quote';
+    return 'https://world-quotation-backend.vercel.app/api/quote';
   }
   // 개발 환경에서는 localhost 사용
   return 'http://localhost:3001/api/quote';

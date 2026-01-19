@@ -36,10 +36,6 @@
       "destination": "/api/quote/agent-status"
     },
     {
-      "source": "/verify-api",
-      "destination": "/api/quote/verify-api"
-    },
-    {
       "source": "/pdf",
       "destination": "/api/quote/pdf"
     },
