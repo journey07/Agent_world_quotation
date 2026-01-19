@@ -46,6 +46,14 @@
     {
       "source": "/pdf",
       "destination": "/api/quote/pdf"
+    },
+    {
+      "source": "/api/auth/login",
+      "destination": "/api/auth/login"
+    },
+    {
+      "source": "/api/auth/verify",
+      "destination": "/api/auth/verify"
     }
   ]
 }

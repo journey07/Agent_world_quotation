@@ -2,6 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import quoteRoutes from './routes/quote.js';
+import authRoutes from './routes/auth.js';
 import { startHeartbeat } from './services/statsService.js';
 
 
@@ -22,11 +23,19 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS
       'http://127.0.0.1:5173',
     ];
 
+// 개발 환경에서는 모든 localhost 포트 허용
+const isDevelopment = process.env.NODE_ENV !== 'production';
+
 app.use(
   cors({
     origin: (origin, callback) => {
       // origin이 없으면 (같은 도메인 요청 등) 허용
       if (!origin) return callback(null, true);
+      
+      // 개발 환경에서는 localhost 모두 허용
+      if (isDevelopment && (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:'))) {
+        return callback(null, true);
+      }
       
       // origin 정규화 (슬래시 제거)
       const normalizedOrigin = origin.endsWith('/') ? origin.slice(0, -1) : origin;
@@ -61,6 +70,7 @@ app.use((req, res, next) => {
 
 // Routes
 app.use('/api/quote', quoteRoutes);
+app.use('/api/auth', authRoutes);
 
 // Health check - GET and HEAD methods supported
 const healthCheckHandler = (req, res) => {

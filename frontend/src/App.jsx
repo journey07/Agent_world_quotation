@@ -38,7 +38,16 @@ const getApi3DUrl = () => {
 const API_URL = getApiUrl();
 const API_3D_URL = getApi3DUrl();
 
-function App() {
+function App({ user, onLogout }) {
+  // user가 없으면 로그인 페이지로 리다이렉트 (안전장치)
+  useEffect(() => {
+    if (!user) {
+      const savedUser = localStorage.getItem('user')
+      if (!savedUser) {
+        window.location.reload()
+      }
+    }
+  }, [user])
   const [formData, setFormData] = useState({
     columns: 5,
     tiers: 6,
@@ -81,9 +90,6 @@ function App() {
   const stateRef = useRef({
     loading,
     generating3D,
-    result,
-    previewImage,
-    generatedImage,
     result,
     previewImage,
     generatedImage,
@@ -669,10 +675,15 @@ function App() {
           </div>
         </div>
         <div className="header-right">
-          <div className="status-badge">
-            <span className="status-dot"></span>
-            SYSTEM ONLINE
-          </div>
+          {user && (
+            <button 
+              onClick={onLogout}
+              className="logout-button"
+              title="로그아웃"
+            >
+              로그아웃
+            </button>
+          )}
         </div>
       </header>
 
