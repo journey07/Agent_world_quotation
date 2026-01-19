@@ -19,24 +19,28 @@ export async function trackApiCall(apiType, responseTime = 0, isError = false, s
     try {
         console.log(`📤 Sending API call to Dashboard: ${apiType}, userName: ${userName || 'null'}, URL: ${DASHBOARD_API_URL}`);
         
+        const payload = {
+            agentId: AGENT_ID,
+            apiType,
+            responseTime,
+            isError,
+            shouldCountApi,
+            shouldCountTask,
+            model: MODEL_NAME,
+            account: process.env.ACCOUNT_EMAIL || 'admin@worldlocker.com',
+            apiKey: process.env.GEMINI_API_KEY ? `sk-...${process.env.GEMINI_API_KEY.slice(-4)}` : 'sk-unknown',
+            logMessage: logMessage,
+            userName: userName
+        };
+        
+        console.log(`📦 API call payload:`, JSON.stringify(payload, null, 2));
+        
         const response = await fetch(DASHBOARD_API_URL, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                agentId: AGENT_ID,
-                apiType,
-                responseTime,
-                isError,
-                shouldCountApi,
-                shouldCountTask,
-                model: MODEL_NAME,
-                account: process.env.ACCOUNT_EMAIL || 'admin@worldlocker.com',
-                apiKey: process.env.GEMINI_API_KEY ? `sk-...${process.env.GEMINI_API_KEY.slice(-4)}` : 'sk-unknown',
-                logMessage: logMessage,
-                userName: userName
-            }),
+            body: JSON.stringify(payload),
         });
 
         if (!response.ok) {
@@ -68,23 +72,27 @@ export async function sendActivityLog(action, logType = 'info', responseTime = 0
     try {
         console.log(`📤 Sending activity log to Dashboard: ${action}, userName: ${userName || 'null'}, URL: ${DASHBOARD_API_URL}`);
         
+        const payload = {
+            agentId: AGENT_ID,
+            apiType: 'activity_log',
+            logAction: action,
+            logType,
+            responseTime,
+            shouldCountApi: false,
+            shouldCountTask: false,
+            model: MODEL_NAME,
+            account: process.env.ACCOUNT_EMAIL || 'admin@worldlocker.com',
+            userName: userName
+        };
+        
+        console.log(`📦 Activity log payload:`, JSON.stringify(payload, null, 2));
+        
         const response = await fetch(DASHBOARD_API_URL, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                agentId: AGENT_ID,
-                apiType: 'activity_log',
-                logAction: action,
-                logType,
-                responseTime,
-                shouldCountApi: false,
-                shouldCountTask: false,
-                model: MODEL_NAME,
-                account: process.env.ACCOUNT_EMAIL || 'admin@worldlocker.com',
-                userName: userName
-            }),
+            body: JSON.stringify(payload),
         });
 
         if (!response.ok) {

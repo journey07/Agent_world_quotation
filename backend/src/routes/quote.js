@@ -94,7 +94,9 @@ router.post('/calculate', async (req, res) => {
         const summary = `Calculated Quote: ${quote.input.columns}x${quote.input.tiers} Set:${quote.breakdown.quantity} ${quote.summary.total.toLocaleString()}KRW`;
 
         // Log and count as Task (Interactive feedback)
-        trackApiCall('calculate', Date.now() - startTime, false, false, true, summary, req.userName || null);
+        const userName = req.userName || null;
+        console.log(`📊 Calculate API - userName: ${userName || 'null'}`);
+        trackApiCall('calculate', Date.now() - startTime, false, false, true, summary, userName);
 
         res.json(quote);
     } catch (err) {
@@ -108,6 +110,8 @@ router.post('/calculate', async (req, res) => {
  */
 router.get('/inquiries', async (req, res) => {
     try {
+        const userName = req.userName || null;
+        console.log(`📋 Inquiries API - userName: ${userName || 'null'}`);
         const inquiries = await getAllInquiries();
         res.json(inquiries);
     } catch (err) {
@@ -283,7 +287,9 @@ router.post('/preview-image', async (req, res) => {
         const logMsg = `Generated 2D Preview for ${columns}x${tiers} Locker (Frame: ${frameType || 'none'})`;
 
         // Log activity, don't count as Task (Calculate handled it)
-        trackApiCall('preview-image', Date.now() - startTime, false, false, false, logMsg, req.userName || null);
+        const userName = req.userName || null;
+        console.log(`🖼️ Preview Image API - userName: ${userName || 'null'}`);
+        trackApiCall('preview-image', Date.now() - startTime, false, false, false, logMsg, userName);
 
         res.json({
             image: base64,

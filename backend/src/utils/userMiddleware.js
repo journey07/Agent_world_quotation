@@ -31,6 +31,8 @@ export function extractUserMiddleware(req, res, next) {
   
   if (userName) {
     console.log(`👤 User name extracted from header: ${userName}`);
+  } else {
+    console.log(`⚠️ No user name found in headers. Available headers:`, Object.keys(req.headers).filter(h => h.toLowerCase().includes('user')));
   }
   
   next();
