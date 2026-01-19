@@ -53,7 +53,7 @@ app.use(
     },
     credentials: true,
     methods: ['GET', 'POST', 'OPTIONS', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'x-user-name', 'x-user-name-encoded'],
   })
 );
 app.use(express.json({ limit: '50mb' })); // Increase limit for large base64 images
