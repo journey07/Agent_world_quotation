@@ -17,6 +17,8 @@ const DASHBOARD_API_URL = process.env.DASHBOARD_API_URL || 'http://localhost:500
  */
 export async function trackApiCall(apiType, responseTime = 0, isError = false, shouldCountApi = true, shouldCountTask = true, logMessage = null, userName = null) {
     try {
+        console.log(`📤 Sending API call to Dashboard: ${apiType}, userName: ${userName || 'null'}, URL: ${DASHBOARD_API_URL}`);
+        
         const response = await fetch(DASHBOARD_API_URL, {
             method: 'POST',
             headers: {
@@ -38,17 +40,19 @@ export async function trackApiCall(apiType, responseTime = 0, isError = false, s
         });
 
         if (!response.ok) {
-            const errorData = await response.json();
-            console.error('❌ Failed to report stats to Brain:', errorData.error);
+            const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+            console.error(`❌ Failed to report stats to Brain: ${response.status} ${response.statusText}`, errorData);
         } else {
-            console.log(`📡 Stats reported to Brain: ${apiType}`);
+            const result = await response.json().catch(() => ({}));
+            console.log(`✅ Stats reported to Brain: ${apiType}, userName: ${userName || 'null'}`);
         }
 
         // Return dummy or fetch from brain if needed. 
         // For efficiency, we just return true/false or a simple object.
         return { success: response.ok };
     } catch (error) {
-        console.error('❌ Error reporting to Dashboard Brain:', error.message);
+        console.error(`❌ Error reporting to Dashboard Brain (${DASHBOARD_API_URL}):`, error.message);
+        console.error('Full error:', error);
         return { success: false, error: error.message };
     }
 }
@@ -62,6 +66,8 @@ export async function trackApiCall(apiType, responseTime = 0, isError = false, s
  */
 export async function sendActivityLog(action, logType = 'info', responseTime = 0, userName = null) {
     try {
+        console.log(`📤 Sending activity log to Dashboard: ${action}, userName: ${userName || 'null'}, URL: ${DASHBOARD_API_URL}`);
+        
         const response = await fetch(DASHBOARD_API_URL, {
             method: 'POST',
             headers: {
@@ -82,12 +88,15 @@ export async function sendActivityLog(action, logType = 'info', responseTime = 0
         });
 
         if (!response.ok) {
-            console.error('❌ Failed to send activity log to Brain');
+            const errorText = await response.text().catch(() => 'Unknown error');
+            console.error(`❌ Failed to send activity log to Brain: ${response.status} ${response.statusText} - ${errorText}`);
         } else {
-            console.log(`📋 Activity log sent: ${action}`);
+            const result = await response.json().catch(() => ({}));
+            console.log(`✅ Activity log sent successfully: ${action}, userName: ${userName || 'null'}`);
         }
     } catch (error) {
-        console.error('❌ Error sending activity log:', error.message);
+        console.error(`❌ Error sending activity log to ${DASHBOARD_API_URL}:`, error.message);
+        console.error('Full error:', error);
     }
 }
 

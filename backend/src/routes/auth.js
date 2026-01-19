@@ -44,6 +44,9 @@ router.post('/login', async (req, res) => {
     // 로그인 성공 시 Dashboard로 로그 전송
     if (result.user) {
       const userName = result.user.name || result.user.username || 'Unknown'
+      console.log(`🔐 Login successful for user: ${userName} (${result.user.username})`)
+      console.log(`📤 Sending login log to Dashboard...`)
+      
       sendActivityLog(
         `User login: ${userName} (${result.user.username})`,
         'success',
@@ -51,7 +54,8 @@ router.post('/login', async (req, res) => {
         userName
       ).catch(err => {
         // 로그 전송 실패는 무시 (비동기 처리)
-        console.error('Failed to send login log to dashboard:', err.message)
+        console.error('❌ Failed to send login log to dashboard:', err.message)
+        console.error('Full error:', err)
       })
     }
 

@@ -45,8 +45,27 @@ const API_3D_URL = getApi3DUrl();
  */
 function getHeadersWithUser(user) {
   const headers = { 'Content-Type': 'application/json' };
-  if (user && user.name) {
-    headers['X-User-Name'] = user.name;
+  if (user) {
+    // name이 있으면 name 사용, 없으면 username 사용
+    const userName = user.name || user.username || null;
+    if (userName) {
+      // HTTP 헤더는 ISO-8859-1만 지원하므로 한글 등 유니코드 문자는 Base64로 인코딩
+      // Base64 인코딩: UTF-8로 인코딩 후 Base64 변환
+      try {
+        const encodedName = btoa(unescape(encodeURIComponent(userName)));
+        headers['X-User-Name'] = encodedName;
+        headers['X-User-Name-Encoded'] = 'base64'; // 인코딩 방식 표시
+        console.log('📤 Sending request with user name (encoded):', userName);
+      } catch (err) {
+        console.error('⚠️ Failed to encode user name:', err);
+        // 인코딩 실패 시 원본 사용 (영문/숫자만 있는 경우)
+        headers['X-User-Name'] = userName;
+      }
+    } else {
+      console.warn('⚠️ User object exists but no name or username found:', user);
+    }
+  } else {
+    console.warn('⚠️ No user object provided to getHeadersWithUser');
   }
   return headers;
 }
