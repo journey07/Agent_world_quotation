@@ -52,14 +52,25 @@ function getHeadersWithUser(user) {
       // HTTP 헤더는 ISO-8859-1만 지원하므로 한글 등 유니코드 문자는 Base64로 인코딩
       // Base64 인코딩: UTF-8로 인코딩 후 Base64 변환
       try {
-        const encodedName = btoa(unescape(encodeURIComponent(userName)));
-        headers['X-User-Name'] = encodedName;
+        // 한글을 올바르게 인코딩하는 방법
+        // 방법 1: TextEncoder 사용 (최신 브라우저)
+        let base64String;
+        if (typeof TextEncoder !== 'undefined') {
+          const utf8Bytes = new TextEncoder().encode(userName);
+          base64String = btoa(String.fromCharCode(...utf8Bytes));
+        } else {
+          // 폴백: 기존 방식 (unescape + encodeURIComponent)
+          base64String = btoa(unescape(encodeURIComponent(userName)));
+        }
+        headers['X-User-Name'] = base64String;
         headers['X-User-Name-Encoded'] = 'base64'; // 인코딩 방식 표시
-        console.log('📤 Sending request with user name (encoded):', userName);
+        console.log('📤 Sending request with user name (encoded):', userName, '->', base64String);
       } catch (err) {
         console.error('⚠️ Failed to encode user name:', err);
-        // 인코딩 실패 시 원본 사용 (영문/숫자만 있는 경우)
+        // 인코딩 실패 시 원본 사용하지 않고 경고만 표시
+        console.warn('⚠️ Using original user name without encoding');
         headers['X-User-Name'] = userName;
+        // 인코딩 플래그는 설정하지 않음
       }
     } else {
       console.warn('⚠️ User object exists but no name or username found:', user);
