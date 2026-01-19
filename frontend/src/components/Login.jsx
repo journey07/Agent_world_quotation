@@ -4,10 +4,11 @@ import './Login.css'
 // API URL 가져오기
 const getApiUrl = () => {
   if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL.replace('/api/quote', '')
+    return import.meta.env.VITE_API_URL.replace('/api/quote', '').replace('/api/auth', '')
   }
-  if (import.meta.env.PROD || window.location.hostname.includes('vercel.app')) {
-    return 'https://agent-world-quotation-backend.vercel.app'
+  // 프로덕션 환경에서는 Render 백엔드 URL 사용
+  if (import.meta.env.PROD || window.location.hostname.includes('vercel.app') || window.location.hostname.includes('supersquad.kr')) {
+    return 'https://agent-world-quotation.onrender.com'
   }
   return 'http://localhost:3001'
 }

@@ -20,10 +20,6 @@
       "destination": "/api/quote/excel"
     },
     {
-      "source": "/generate-3d-installation",
-      "destination": "/api/quote/generate-3d-installation"
-    },
-    {
       "source": "/health",
       "destination": "/api/quote/health"
     },
