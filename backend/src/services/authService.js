@@ -15,6 +15,9 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey)
  * Username과 password로 로그인
  */
 export async function loginWithUsername(username, password) {
+  // #region agent log
+  fetch('http://127.0.0.1:7246/ingest/9ba8d60d-8408-44f9-930a-ad25fb3670fc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'authService.js:17',message:'loginWithUsername called',data:{username},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})}).catch(()=>{});
+  // #endregion
   try {
     // users 테이블에서 username으로 사용자 조회
     const { data: user, error } = await supabase
@@ -22,6 +25,10 @@ export async function loginWithUsername(username, password) {
       .select('*')
       .eq('username', username)
       .single()
+
+    // #region agent log
+    fetch('http://127.0.0.1:7246/ingest/9ba8d60d-8408-44f9-930a-ad25fb3670fc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'authService.js:24',message:'Supabase query result',data:{hasUser:!!user,hasError:!!error,errorCode:error?.code,userName:user?.name,username:user?.username,userId:user?.id,allUserFields:user?Object.keys(user):[]},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})}).catch(()=>{});
+    // #endregion
 
     if (error) {
       if (error.code === 'PGRST116') {
@@ -45,11 +52,18 @@ export async function loginWithUsername(username, password) {
     // 비밀번호 해시는 제외하고 사용자 정보 반환
     const { password_hash, ...userWithoutPassword } = user
 
+    // #region agent log
+    fetch('http://127.0.0.1:7246/ingest/9ba8d60d-8408-44f9-930a-ad25fb3670fc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'authService.js:46',message:'Returning user without password',data:{userName:userWithoutPassword.name,username:userWithoutPassword.username,userId:userWithoutPassword.id,allFields:Object.keys(userWithoutPassword)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})}).catch(()=>{});
+    // #endregion
+
     return {
       success: true,
       user: userWithoutPassword
     }
   } catch (error) {
+    // #region agent log
+    fetch('http://127.0.0.1:7246/ingest/9ba8d60d-8408-44f9-930a-ad25fb3670fc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'authService.js:53',message:'Login error caught',data:{error:error.message,stack:error.stack},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})}).catch(()=>{});
+    // #endregion
     console.error('Login error:', error)
     return {
       success: false,

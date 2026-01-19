@@ -47,9 +47,15 @@ function Login({ onLoginSuccess }) {
       }
 
       if (data.user) {
+        // #region agent log
+        fetch('http://127.0.0.1:7246/ingest/9ba8d60d-8408-44f9-930a-ad25fb3670fc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Login.jsx:49',message:'Login success, saving user',data:{userName:data.user.name,username:data.user.username,userId:data.user.id,allFields:Object.keys(data.user)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'J'})}).catch(()=>{});
+        // #endregion
         // 사용자 정보를 localStorage에 저장
         localStorage.setItem('user', JSON.stringify(data.user))
         localStorage.setItem('userId', data.user.id)
+        // #region agent log
+        fetch('http://127.0.0.1:7246/ingest/9ba8d60d-8408-44f9-930a-ad25fb3670fc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Login.jsx:53',message:'Calling onLoginSuccess',data:{userName:data.user.name,username:data.user.username},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'J'})}).catch(()=>{});
+        // #endregion
         onLoginSuccess(data.user)
       }
     } catch (err) {

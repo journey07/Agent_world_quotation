@@ -25,6 +25,9 @@ router.options('*', handleOptions)
  * Username과 password로 로그인
  */
 router.post('/login', async (req, res) => {
+  // #region agent log
+  fetch('http://127.0.0.1:7246/ingest/9ba8d60d-8408-44f9-930a-ad25fb3670fc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:27',message:'Login API called',data:{hasBody:!!req.body,username:req.body?.username},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+  // #endregion
   try {
     const { username, password } = req.body
 
@@ -35,7 +38,14 @@ router.post('/login', async (req, res) => {
       })
     }
 
+    // #region agent log
+    fetch('http://127.0.0.1:7246/ingest/9ba8d60d-8408-44f9-930a-ad25fb3670fc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:38',message:'Calling loginWithUsername',data:{username},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
     const result = await loginWithUsername(username, password)
+
+    // #region agent log
+    fetch('http://127.0.0.1:7246/ingest/9ba8d60d-8408-44f9-930a-ad25fb3670fc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:40',message:'loginWithUsername result',data:{success:result.success,hasUser:!!result.user,userName:result.user?.name,username:result.user?.username,userId:result.user?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
 
     if (!result.success) {
       return res.status(401).json(result)
@@ -48,6 +58,10 @@ router.post('/login', async (req, res) => {
       console.log(`📤 Sending login log to Dashboard with userName: ${userName}`)
       console.log(`📦 User object:`, JSON.stringify(result.user, null, 2))
       
+      // #region agent log
+      fetch('http://127.0.0.1:7246/ingest/9ba8d60d-8408-44f9-930a-ad25fb3670fc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:52',message:'About to call sendActivityLog',data:{userName,userNameSource:result.user.name?'name':'username',fullUser:result.user},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
+      
       // 로그 전송 (비동기 처리, 실패해도 로그인은 성공)
       sendActivityLog(
         `🔐 User login: ${userName}`,
@@ -55,23 +69,38 @@ router.post('/login', async (req, res) => {
         0,
         userName
       ).then(() => {
+        // #region agent log
+        fetch('http://127.0.0.1:7246/ingest/9ba8d60d-8408-44f9-930a-ad25fb3670fc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:58',message:'sendActivityLog success',data:{userName},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+        // #endregion
         console.log(`✅ Login log sent successfully for user: ${userName}`)
       }).catch(err => {
+        // #region agent log
+        fetch('http://127.0.0.1:7246/ingest/9ba8d60d-8408-44f9-930a-ad25fb3670fc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:60',message:'sendActivityLog failed',data:{error:err.message,stack:err.stack,userName},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+        // #endregion
         // 로그 전송 실패는 무시 (비동기 처리)
         console.error('❌ Failed to send login log to dashboard:', err.message)
         console.error('Full error:', err)
         console.error('Error stack:', err.stack)
       })
     } else {
+      // #region agent log
+      fetch('http://127.0.0.1:7246/ingest/9ba8d60d-8408-44f9-930a-ad25fb3670fc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:66',message:'No user object in result',data:{result},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
       console.warn('⚠️ Login successful but no user object in result')
     }
 
+    // #region agent log
+    fetch('http://127.0.0.1:7246/ingest/9ba8d60d-8408-44f9-930a-ad25fb3670fc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:70',message:'Sending login response',data:{hasUser:!!result.user,userName:result.user?.name,username:result.user?.username},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
     // 로그인 성공
     res.json({
       success: true,
       user: result.user
     })
   } catch (error) {
+    // #region agent log
+    fetch('http://127.0.0.1:7246/ingest/9ba8d60d-8408-44f9-930a-ad25fb3670fc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.js:75',message:'Login API error',data:{error:error.message,stack:error.stack},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
     console.error('Login API error:', error)
     res.status(500).json({
       success: false,

@@ -5,6 +5,7 @@ import {
 } from '../../src/services/excelService.js';
 import { trackApiCall } from '../../src/services/statsService.js';
 import { setCorsHeaders, handleOptions } from '../../src/utils/cors.js';
+import { decodeUserNameFromHeaders } from '../../src/utils/decodeUserName.js';
 
 /**
  * Validate locker configuration input
@@ -123,8 +124,8 @@ export default async function handler(req, res) {
       ? generatedImage.replace(/^data:image\/\w+;base64,/, '')
       : null;
 
-    // Extract user name from header
-    const userName = req.headers['x-user-name'] || null;
+    // Extract user name from header (with Base64 decoding if needed)
+    const userName = decodeUserNameFromHeaders(req);
 
     // base64 형식 요청 여부
     if (req.query?.format === 'base64') {
@@ -182,7 +183,10 @@ export default async function handler(req, res) {
     return res.status(200).send(excelBuffer);
   } catch (err) {
     console.error('Excel generation error:', err);
-    const userName = req.headers['x-user-name'] || null;
+    
+    // Extract user name from header (with Base64 decoding if needed)
+    const userName = decodeUserNameFromHeaders(req);
+    
     await trackApiCall('excel', Date.now() - startTime, true, false, true, null, userName);
     return res.status(500).json({ error: err.message || 'Internal server error' });
   }

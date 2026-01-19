@@ -1,6 +1,7 @@
 import { generateLockerGridBase64 } from '../../src/services/imageService.js';
 import { trackApiCall } from '../../src/services/statsService.js';
 import { setCorsHeaders, handleOptions } from '../../src/utils/cors.js';
+import { decodeUserNameFromHeaders } from '../../src/utils/decodeUserName.js';
 
 export default async function handler(req, res) {
   // CORS 헤더 설정
@@ -38,8 +39,8 @@ export default async function handler(req, res) {
       frameType || 'none'
     })`;
 
-    // Extract user name from header
-    const userName = req.headers['x-user-name'] || null;
+    // Extract user name from header (with Base64 decoding if needed)
+    const userName = decodeUserNameFromHeaders(req);
 
     // preview 이미지는 Task 로는 카운트하지 않던 기존 로직 유지
     await trackApiCall('preview-image', Date.now() - startTime, false, false, false, logMsg, userName);
@@ -49,7 +50,9 @@ export default async function handler(req, res) {
       mimeType: 'image/png',
     });
   } catch (err) {
-    const userName = req.headers['x-user-name'] || null;
+    // Extract user name from header (with Base64 decoding if needed)
+    const userName = decodeUserNameFromHeaders(req);
+    
     await trackApiCall('preview-image', Date.now() - startTime, true, false, true, null, userName);
     return res.status(500).json({ error: err.message || 'Internal server error' });
   }

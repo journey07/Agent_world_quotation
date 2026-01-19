@@ -1,6 +1,7 @@
 import { calculateQuote } from '../../src/services/pricingService.js';
 import { trackApiCall } from '../../src/services/statsService.js';
 import { setCorsHeaders, handleOptions } from '../../src/utils/cors.js';
+import { decodeUserNameFromHeaders } from '../../src/utils/decodeUserName.js';
 
 /**
  * Validate locker configuration input
@@ -113,8 +114,8 @@ export default async function handler(req, res) {
     // Create descriptive log message
     const summary = `Calculated Quote: ${quote.input.columns}x${quote.input.tiers} Set:${quote.breakdown.quantity} ${quote.summary.total.toLocaleString()}KRW`;
 
-    // Extract user name from header
-    const userName = req.headers['x-user-name'] || null;
+    // Extract user name from header (with Base64 decoding if needed)
+    const userName = decodeUserNameFromHeaders(req);
 
     // Log and count as Task (Interactive feedback) - 에러 발생해도 계속 진행
     try {

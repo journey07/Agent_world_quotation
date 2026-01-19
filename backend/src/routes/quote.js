@@ -95,6 +95,9 @@ router.post('/calculate', async (req, res) => {
 
         // Log and count as Task (Interactive feedback)
         const userName = req.userName || null;
+        // #region agent log
+        fetch('http://127.0.0.1:7246/ingest/9ba8d60d-8408-44f9-930a-ad25fb3670fc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'quote.js:97',message:'Calculate API with userName',data:{userName,hasValue:!!userName},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H'})}).catch(()=>{});
+        // #endregion
         console.log(`📊 Calculate API - userName: ${userName || 'null'}`);
         trackApiCall('calculate', Date.now() - startTime, false, false, true, summary, userName);
 
