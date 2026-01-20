@@ -54,7 +54,7 @@ router.post('/login', async (req, res) => {
     // 로그인 성공 시 Dashboard로 로그 전송
     if (result.user) {
       const userName = result.user.name || result.user.username || 'Unknown'
-      const loginAction = `User login: ${userName}`
+      const loginAction = 'User logged in'
 
       console.log(`🔐 [LOGIN] Login successful for user: ${userName} (${result.user.username})`)
       console.log(`📤 [LOGIN] Preparing to send login log to Dashboard`)

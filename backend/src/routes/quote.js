@@ -96,7 +96,7 @@ router.post('/calculate', async (req, res) => {
         // Log and count as Task (Interactive feedback)
         const userName = req.userName || null;
         // #region agent log
-        fetch('http://127.0.0.1:7246/ingest/9ba8d60d-8408-44f9-930a-ad25fb3670fc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'quote.js:97',message:'Calculate API with userName',data:{userName,hasValue:!!userName},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H'})}).catch(()=>{});
+        fetch('http://127.0.0.1:7246/ingest/9ba8d60d-8408-44f9-930a-ad25fb3670fc', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'quote.js:97', message: 'Calculate API with userName', data: { userName, hasValue: !!userName }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'H' }) }).catch(() => { });
         // #endregion
         console.log(`📊 Calculate API - userName: ${userName || 'null'}`);
         trackApiCall('calculate', Date.now() - startTime, false, false, true, summary, userName);
@@ -321,7 +321,7 @@ router.post('/generate-3d-installation', async (req, res) => {
         const userName = req.userName || null;
 
         // Send start log
-        sendActivityLog('🎨 Starting 3D Installation Image Generation', 'info', 0, userName);
+        sendActivityLog('Starting 3D Installation Image Generation', 'info', 0, userName);
 
         // Set status to processing
         setAgentStatus('processing');
@@ -336,18 +336,18 @@ router.post('/generate-3d-installation', async (req, res) => {
             'library': 'Library Lounge'
         };
         const bgText = backgroundMap[installationBackground] || installationBackground || 'Default Background';
-        sendActivityLog(`🖼️ Requested Background: ${bgText}`, 'info', 0, userName);
+        sendActivityLog(`Requested Background: ${bgText}`, 'info', 0, userName);
 
         // Calculate and log image size
         if (image) {
             // Base64 string length * 0.75 is approx byte size
             const sizeInBytes = image.length * 0.75;
             const sizeInMB = (sizeInBytes / (1024 * 1024)).toFixed(2);
-            sendActivityLog(`📊 Image Size: ${sizeInMB} MB`, 'info', 0, userName);
+            sendActivityLog(`Image Size: ${sizeInMB} MB`, 'info', 0, userName);
         }
 
         // Send API call log
-        sendActivityLog('⏳ Calling Gemini API...', 'info', 0, userName);
+        sendActivityLog('Calling Gemini API...', 'info', 0, userName);
 
         // Generate 3D visualization using Gemini API
         const generated3DImage = await generate3DInstallation(image, mimeType || 'image/png', frameType || 'none', columns, tiers, installationBackground);
@@ -355,7 +355,7 @@ router.post('/generate-3d-installation', async (req, res) => {
         const responseTime = Date.now() - startTime;
 
         // Send completion log
-        sendActivityLog(`✅ 3D Generation Completed (${(responseTime / 1000).toFixed(1)}s)`, 'success', responseTime, userName);
+        sendActivityLog(`3D Generation Completed (${(responseTime / 1000).toFixed(1)}s)`, 'success', responseTime, userName);
 
         // Track API call (this is the main 3D generation task)
         trackApiCall('generate-3d-installation', responseTime, false, true, true, null, userName);
@@ -373,7 +373,7 @@ router.post('/generate-3d-installation', async (req, res) => {
         const userName = req.userName || null;
 
         // Send error log
-        sendActivityLog(`❌ 3D Generation Failed: ${err.message}`, 'error', responseTime, userName);
+        sendActivityLog(`3D Generation Failed: ${err.message}`, 'error', responseTime, userName);
 
         trackApiCall('generate-3d-installation', responseTime, true, true, true, null, userName);
 
@@ -438,7 +438,7 @@ router.post('/agent-status', async (req, res) => {
  */
 const healthCheckHandler = (req, res) => {
     const responseData = { status: 'ok', timestamp: new Date().toISOString() };
-    
+
     // HEAD 요청은 body 없이 상태 코드만 반환
     if (req.method === 'HEAD') {
         res.status(200).end();

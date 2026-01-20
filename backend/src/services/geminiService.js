@@ -25,8 +25,8 @@ function getAI() {
  * @returns {Promise<string>} Base64 encoded generated 3D visualization
  */
 export async function generate3DInstallation(base64Image, mimeType = 'image/png', frameType = 'none', columns = null, tiers = null, installationBackground = null) {
-    console.log('🎨 Starting 3D image generation...');
-    console.log(`🖼️ Requested Background: ${installationBackground || 'Default'}`);
+    console.log('Starting 3D image generation...');
+    console.log(`Requested Background: ${installationBackground || 'Default'}`);
 
     // Calculate size stats
     const charLength = base64Image.length;
@@ -34,10 +34,10 @@ export async function generate3DInstallation(base64Image, mimeType = 'image/png'
     const sizeInKB = (sizeInBytes / 1024).toFixed(2);
     const sizeInMB = (sizeInBytes / (1024 * 1024)).toFixed(2);
 
-    console.log(`📊 Image Input Stats:`);
+    console.log(`Image Input Stats:`);
     console.log(`   - Base64 Length: ${charLength} chars`);
     console.log(`   - Approx. Size: ${sizeInKB} KB (${sizeInMB} MB)`);
-    console.log(`📷 MIME type: ${mimeType}`);
+    console.log(`MIME type: ${mimeType}`);
 
     try {
         // Generate specific prompt additions based on frame type
@@ -106,7 +106,7 @@ Style: Clean, professional, architectural photography, 3D render, high resolutio
             },
         ];
 
-        console.log('📡 Calling Gemini API...');
+        console.log('Calling Gemini API...');
 
         // Call Gemini API to generate the image
         // Using Nano Banana Pro (gemini-3-pro-image-preview) as requested
@@ -116,7 +116,7 @@ Style: Clean, professional, architectural photography, 3D render, high resolutio
             contents: prompt,
         });
 
-        console.log('✅ Gemini API response received');
+        console.log('Gemini API response received');
         console.log('Response structure:', JSON.stringify(response, null, 2).substring(0, 500));
 
         // Extract the generated image from the response
@@ -126,9 +126,9 @@ Style: Clean, professional, architectural photography, 3D render, high resolutio
 
         for (const part of response.candidates[0].content.parts) {
             if (part.text) {
-                console.log('📝 Gemini response text:', part.text);
+                console.log('Gemini response text:', part.text);
             } else if (part.inlineData) {
-                console.log('🖼️ Image data received, size:', part.inlineData.data.length);
+                console.log('Image data received, size:', part.inlineData.data.length);
                 // Return the base64 encoded image
                 return part.inlineData.data;
             }
@@ -136,7 +136,7 @@ Style: Clean, professional, architectural photography, 3D render, high resolutio
 
         throw new Error('No image data returned from Gemini API');
     } catch (error) {
-        console.error('❌ Error generating 3D installation:', error);
+        console.error('Error generating 3D installation:', error);
         console.error('Error name:', error.name);
         console.error('Error message:', error.message);
         console.error('Error stack:', error.stack);
@@ -176,10 +176,10 @@ Style: Clean, professional, architectural photography, 3D render, high resolutio
         if (error.status) errorStatus = error.status;
 
         // Check for API key leak error (403 with "leaked" message)
-        const isLeakedError = 
+        const isLeakedError =
             (errorCode === 403 || errorStatus === 'PERMISSION_DENIED') &&
-            (errorMessage.toLowerCase().includes('leaked') || 
-             errorMessage.toLowerCase().includes('reported'));
+            (errorMessage.toLowerCase().includes('leaked') ||
+                errorMessage.toLowerCase().includes('reported'));
 
         if (isLeakedError) {
             throw new Error(
