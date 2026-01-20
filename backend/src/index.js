@@ -79,6 +79,10 @@ app.use((req, res, next) => {
 app.use('/api/quote', quoteRoutes);
 app.use('/api/auth', authRoutes);
 
+// For backward compatibility with top-level paths (e.g., /calculate instead of /api/quote/calculate)
+app.use('/', quoteRoutes);
+
+
 // Health check - GET and HEAD methods supported
 const healthCheckHandler = (req, res) => {
   const userAgent = req.get('user-agent') || 'unknown';
