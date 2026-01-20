@@ -92,23 +92,40 @@ export async function sendActivityLog(action, logType = 'info', responseTime = 0
     // #region agent log
     fetch('http://127.0.0.1:7246/ingest/9ba8d60d-8408-44f9-930a-ad25fb3670fc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'statsService.js:71',message:'sendActivityLog called',data:{action,logType,userName,dashboardUrl:DASHBOARD_API_URL},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
     // #endregion
+    
+    // Validate required parameters
+    if (!action) {
+        console.error('❌ [LOGIN LOG] sendActivityLog called without action parameter');
+        return;
+    }
+    
+    if (!AGENT_ID) {
+        console.error('❌ [LOGIN LOG] AGENT_ID is not set');
+        return;
+    }
+    
+    if (!DASHBOARD_API_URL) {
+        console.error('❌ [LOGIN LOG] DASHBOARD_API_URL is not set');
+        return;
+    }
+    
     try {
-        console.log(`📤 Sending activity log to Dashboard: ${action}, userName: ${userName || 'null'}, URL: ${DASHBOARD_API_URL}`);
+        console.log(`📤 [LOGIN LOG] Sending activity log to Dashboard: "${action}", userName: ${userName || 'null'}, URL: ${DASHBOARD_API_URL}`);
         
         const payload = {
             agentId: AGENT_ID,
             apiType: 'activity_log',
-            logAction: action,
-            logType,
-            responseTime,
+            logAction: action,  // This is the key field - must be present
+            logType: logType || 'info',
+            responseTime: responseTime || 0,
             shouldCountApi: false,
             shouldCountTask: false,
             model: MODEL_NAME,
             account: process.env.ACCOUNT_EMAIL || 'admin@worldlocker.com',
-            userName: userName
+            userName: userName || null
         };
         
-        console.log(`📦 Activity log payload:`, JSON.stringify(payload, null, 2));
+        console.log(`📦 [LOGIN LOG] Activity log payload:`, JSON.stringify(payload, null, 2));
         
         // #region agent log
         fetch('http://127.0.0.1:7246/ingest/9ba8d60d-8408-44f9-930a-ad25fb3670fc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'statsService.js:90',message:'About to fetch Dashboard API',data:{url:DASHBOARD_API_URL,payload},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
@@ -131,20 +148,25 @@ export async function sendActivityLog(action, logType = 'info', responseTime = 0
             // #region agent log
             fetch('http://127.0.0.1:7246/ingest/9ba8d60d-8408-44f9-930a-ad25fb3670fc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'statsService.js:100',message:'Dashboard API failed',data:{status:response.status,statusText:response.statusText,errorText},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
             // #endregion
-            console.error(`❌ Failed to send activity log to Brain: ${response.status} ${response.statusText} - ${errorText}`);
+            console.error(`❌ [LOGIN LOG] Failed to send activity log to Dashboard: ${response.status} ${response.statusText}`);
+            console.error(`❌ [LOGIN LOG] Error response: ${errorText}`);
+            console.error(`❌ [LOGIN LOG] Payload that failed:`, JSON.stringify(payload, null, 2));
         } else {
             const result = await response.json().catch(() => ({}));
             // #region agent log
             fetch('http://127.0.0.1:7246/ingest/9ba8d60d-8408-44f9-930a-ad25fb3670fc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'statsService.js:103',message:'Dashboard API success',data:{result},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
             // #endregion
-            console.log(`✅ Activity log sent successfully: ${action}, userName: ${userName || 'null'}`);
+            console.log(`✅ [LOGIN LOG] Activity log sent successfully: "${action}", userName: ${userName || 'null'}`);
+            console.log(`✅ [LOGIN LOG] Dashboard response:`, JSON.stringify(result, null, 2));
         }
     } catch (error) {
         // #region agent log
         fetch('http://127.0.0.1:7246/ingest/9ba8d60d-8408-44f9-930a-ad25fb3670fc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'statsService.js:105',message:'sendActivityLog exception',data:{error:error.message,stack:error.stack,code:error.code},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
         // #endregion
-        console.error(`❌ Error sending activity log to ${DASHBOARD_API_URL}:`, error.message);
-        console.error('Full error:', error);
+        console.error(`❌ [LOGIN LOG] Exception sending activity log to ${DASHBOARD_API_URL}:`, error.message);
+        console.error(`❌ [LOGIN LOG] Error stack:`, error.stack);
+        console.error(`❌ [LOGIN LOG] Error code:`, error.code);
+        console.error(`❌ [LOGIN LOG] Full error object:`, error);
     }
 }
 
