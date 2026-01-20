@@ -1,51 +1,17 @@
 {
   "version": 2,
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "regions": ["icn1"],
+  "regions": [
+    "icn1"
+  ],
   "rewrites": [
     {
-      "source": "/calculate",
-      "destination": "/api/quote/calculate"
-    },
-    {
-      "source": "/inquiries",
-      "destination": "/api/quote/inquiries"
-    },
-    {
-      "source": "/preview-image",
-      "destination": "/api/quote/preview-image"
-    },
-    {
-      "source": "/excel",
-      "destination": "/api/quote/excel"
+      "source": "/(api/.*)",
+      "destination": "/api/index"
     },
     {
       "source": "/health",
-      "destination": "/api/quote/health"
-    },
-    {
-      "source": "/dashboard-stats",
-      "destination": "/api/quote/dashboard-stats"
-    },
-    {
-      "source": "/agent-toggle",
-      "destination": "/api/quote/agent-toggle"
-    },
-    {
-      "source": "/agent-status",
-      "destination": "/api/quote/agent-status"
-    },
-    {
-      "source": "/pdf",
-      "destination": "/api/quote/pdf"
-    },
-    {
-      "source": "/api/auth/login",
-      "destination": "/api/auth/login"
-    },
-    {
-      "source": "/api/auth/verify",
-      "destination": "/api/auth/verify"
+      "destination": "/api/index"
     }
   ]
 }
