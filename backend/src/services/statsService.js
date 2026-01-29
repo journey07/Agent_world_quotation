@@ -75,8 +75,7 @@ export async function trackApiCall(apiType, responseTime = 0, isError = false, s
         // #region agent log
         fetch('http://127.0.0.1:7246/ingest/9ba8d60d-8408-44f9-930a-ad25fb3670fc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'statsService.js:58',message:'trackApiCall exception',data:{error:error.message,stack:error.stack,code:error.code},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
         // #endregion
-        console.error(`❌ Error reporting to Dashboard Brain (${DASHBOARD_API_URL}):`, error.message);
-        console.error('Full error:', error);
+        console.error(`⚠️  Dashboard unavailable (${error.code || 'NETWORK_ERROR'})`);
         return { success: false, error: error.message };
     }
 }
@@ -154,12 +153,7 @@ export async function sendActivityLog(action, logType = 'info', responseTime = 0
             return { success: true, result };
         }
     } catch (error) {
-        console.error(`❌ [LOGIN LOG] ========== EXCEPTION ==========`);
-        console.error(`❌ [LOGIN LOG] Exception type: ${error.constructor.name}`);
-        console.error(`❌ [LOGIN LOG] Error message: ${error.message}`);
-        console.error(`❌ [LOGIN LOG] Error code: ${error.code || 'N/A'}`);
-        console.error(`❌ [LOGIN LOG] Error stack:`, error.stack);
-        console.error(`❌ [LOGIN LOG] Full error:`, error);
+        console.error(`⚠️  [LOGIN LOG] Dashboard unavailable (${error.code || 'NETWORK_ERROR'})`);
         return { success: false, error: error.message };
     }
 }

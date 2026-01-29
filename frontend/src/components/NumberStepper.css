@@ -1,75 +1,94 @@
 .number-stepper {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    width: max-content;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    height: 28px;
+    flex-shrink: 0;
 }
 
 .stepper-label {
-    font-size: 0.85rem;
+    font-size: 0.75rem;
     font-weight: 600;
     color: var(--text-secondary);
-    letter-spacing: 0.01em;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    height: 28px;
+    line-height: 28px;
 }
 
 .stepper-control {
     display: flex;
     align-items: center;
-    background: white;
+    background: #f8fafc;
     border: 1px solid var(--border-color);
-    border-radius: 10px;
-    height: 48px;
-    padding: 4px;
-    box-shadow: var(--shadow-sm);
+    border-radius: 6px;
+    height: 28px;
+    padding: 2px;
     transition: all 0.2s ease;
-    width: max-content;
-    gap: 8px;
-    /* Added gap */
+    gap: 1px;
 }
 
 .stepper-control:focus-within {
     border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.1);
+    box-shadow: 0 0 0 2px rgba(30, 58, 138, 0.1);
 }
 
 .stepper-btn {
-    width: 36px;
-    /* Slightly smaller */
-    height: 36px;
-    /* Slightly smaller */
+    width: 22px;
+    height: 22px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #f1f5f9;
+    background: white;
     border: none;
-    border-radius: 8px;
+    border-radius: 4px;
     color: var(--text-secondary);
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.15s;
     flex-shrink: 0;
 }
 
-/* ... skip hover/active/disabled ... */
+.stepper-btn:hover:not(:disabled) {
+    background: var(--primary);
+    color: white;
+}
+
+.stepper-btn:active:not(:disabled) {
+    transform: scale(0.95);
+}
+
+.stepper-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.stepper-btn svg {
+    width: 12px;
+    height: 12px;
+}
 
 .stepper-input-wrapper {
-    width: 72px;
     display: flex;
     align-items: center;
     justify-content: center;
     height: 100%;
+    padding: 0 6px;
+    gap: 2px;
 }
 
 .stepper-input {
-    width: 100%;
+    width: 22px;
     height: 100%;
     border: none;
     background: transparent;
-    text-align: center;
-    font-size: 1.1rem;
+    text-align: right;
+    font-size: 0.9rem;
     font-weight: 700;
-    color: var(--text-main);
+    color: #0f172a;
     padding: 0;
     margin: 0;
+    line-height: 20px;
     -moz-appearance: textfield;
 }
 
@@ -84,9 +103,20 @@
 }
 
 .stepper-suffix {
-    font-size: 0.9rem;
-    color: var(--text-secondary);
+    font-size: 0.75rem;
+    color: #475569;
     font-weight: 500;
-    margin-left: 2px;
+    white-space: nowrap;
     user-select: none;
+    position: relative;
+    top: 1px;
+}
+
+/* Narrow variant for sets input */
+.stepper-narrow .stepper-input {
+    width: 50px;
+}
+
+.stepper-narrow .stepper-input-wrapper {
+    padding: 0 6px;
 }

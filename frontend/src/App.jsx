@@ -121,10 +121,17 @@ function App({ user, onLogout }) {
     quantity: 1,
     controlPanelColumn: 2, // Which column has the control panel
     controlPanelTiers: 3,  // Control panel tier count for pricing (Default 3)
+    tierConfig: {
+      type: 'uniform', // 'uniform', 'topLarge', 'bottomLarge', 'bothLarge', 'custom'
+      ratios: null // Array of ratios when type is 'custom'
+    },
     options: {
       dualController: false,
       acrylic: false,
-      frameType: 'none' // 'none', 'fullSet', 'topOnly', 'sideOnly', 'topAndSide'
+      frameType: 'none', // 'none', 'fullSet', 'topOnly', 'sideOnly', 'topAndSide'
+      lockerColor: 'white', // 'white', 'ivory', 'black', 'custom'
+      customColor: '#808080', // Custom hex color
+      handle: false // 손잡이 옵션
     },
     region: 'seoul',
     installationBackground: '깔끔하고 현대적인 오피스 빌딩 로비',
@@ -188,13 +195,30 @@ function App({ user, onLogout }) {
     }
   }, [formData.columns]);
 
-  // Ensure control panel tiers is valid when total tiers change (max = tiers - 2)
+  // Ensure control panel tiers is valid when total tiers change (max = tiers - 2, 제어부가 2칸 차지)
   useEffect(() => {
     const maxCPTiers = Math.max(1, formData.tiers - 2);
     if (formData.controlPanelTiers > maxCPTiers) {
       setFormData(prev => ({ ...prev, controlPanelTiers: maxCPTiers }));
     }
   }, [formData.tiers, formData.controlPanelTiers]);
+
+  // Sync tierConfig.ratios when tiers changes (for custom type)
+  useEffect(() => {
+    if (formData.tierConfig.type === 'custom') {
+      const currentRatios = formData.tierConfig.ratios || [];
+      if (currentRatios.length !== formData.tiers) {
+        // Preserve existing ratios where possible, fill rest with 1
+        const newRatios = Array.from({ length: formData.tiers }, (_, i) =>
+          currentRatios[i] !== undefined ? currentRatios[i] : 1
+        );
+        setFormData(prev => ({
+          ...prev,
+          tierConfig: { ...prev.tierConfig, ratios: newRatios }
+        }));
+      }
+    }
+  }, [formData.tiers, formData.tierConfig.type]);
 
   // Reset view mode to 2d when 3D image is cleared
   useEffect(() => {
@@ -278,7 +302,11 @@ function App({ user, onLogout }) {
           tiers: formData.tiers,
           controlPanelColumn: formData.controlPanelColumn,
           controlPanelTiers: formData.controlPanelTiers,
-          frameType: formData.options.frameType
+          frameType: formData.options.frameType,
+          lockerColor: formData.options.lockerColor,
+          customColor: formData.options.customColor,
+          handle: formData.options.handle,
+          tierConfig: formData.tierConfig
         })
       });
 
@@ -312,7 +340,14 @@ function App({ user, onLogout }) {
       quantity: inquiry.quantity,
       controlPanelColumn: inquiry.controlPanelColumn || 1,
       controlPanelTiers: inquiry.controlPanelTiers || 3,
+      tierConfig: inquiry.tierConfig || { type: 'uniform', ratios: null },
       options: {
+        dualController: false,
+        acrylic: false,
+        frameType: 'none',
+        lockerColor: 'white',
+        customColor: '#808080',
+        handle: false,
         ...inquiry.options
       },
       region: inquiry.region,
@@ -722,10 +757,9 @@ function App({ user, onLogout }) {
           key={i}
           className={`col-selector-item ${isSelected ? 'selected' : ''}`}
           onClick={() => handleColumnSelect(i)}
-          title={`Place Control Panel in Column ${i}`}
+          title={`${i}열에 제어부 배치`}
         >
-          <div className="col-num">{`${i}열`}</div>
-          {isSelected && <div className="col-icon">🖥️</div>}
+          {isSelected ? <div className="col-icon">🖥️</div> : <div className="col-num">{i}</div>}
         </div>
       );
     }
@@ -743,10 +777,24 @@ function App({ user, onLogout }) {
               <h1>보관함 견적 생성 에이전트</h1>
             </div>
           </div>
+          <div className="tab-buttons">
+            <button
+              className={`tab-btn ${activeTab === 'config' ? 'active' : ''}`}
+              onClick={() => setActiveTab('config')}
+            >
+              견적
+            </button>
+            <button
+              className={`tab-btn ${activeTab === 'data' ? 'active' : ''}`}
+              onClick={() => setActiveTab('data')}
+            >
+              문의내역
+            </button>
+          </div>
         </div>
         <div className="header-right">
           {user && (
-            <button 
+            <button
               onClick={onLogout}
               className="logout-button"
               title="로그아웃"
@@ -756,25 +804,6 @@ function App({ user, onLogout }) {
           )}
         </div>
       </header>
-
-      <div className="tab-buttons-center">
-        <div className="tab-buttons">
-          <button
-            className={`tab-btn ${activeTab === 'config' ? 'active' : ''}`}
-            onClick={() => setActiveTab('config')}
-          >
-            레이아웃 & 견적
-          </button>
-          <button
-            className={`tab-btn ${activeTab === 'data' ? 'active' : ''}`}
-            onClick={() => setActiveTab('data')}
-          >
-            문의내역
-          </button>
-        </div>
-
-
-      </div>
 
       {/* Excel Generation Loading Modal */}
       {generatingExcel && (
@@ -797,270 +826,276 @@ function App({ user, onLogout }) {
 
       {activeTab === 'config' ? (
         <div className="grid-container">
-          {/* Left: Configuration Form */}
-          <div className="glass-card config-panel">
-            <div className="config-header-row">
-              <h2>
-                <div className="icon-box">⚙️</div>
-                보관함 구성
-              </h2>
-
-              <div className="workflow-mode-toggle">
-                <div className="toggle-container">
-                  <div
-                    className={`toggle-option ${workflowMode === 'auto' ? 'active auto-active' : ''}`}
-                    onClick={() => !isWorkflowRunning && setWorkflowMode('auto')}
-                    style={{ cursor: isWorkflowRunning ? 'not-allowed' : 'pointer', opacity: isWorkflowRunning ? 0.6 : 1 }}
-                    title="자동 모드: 버튼 한 번으로 견적서까지 완성"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M12 2C10.3431 2 9 3.34315 9 5V6H5C3.89543 6 3 6.89543 3 8V18C3 19.1046 3.89543 20 5 20H19C20.1046 20 21 19.1046 21 18V8C21 6.89543 20.1046 6 19 6H15V5C15 3.34315 13.6569 2 12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                      <path d="M9 12V14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                      <path d="M15 12V14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                      <path d="M9 17H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                    <span>자동</span>
-                  </div>
-                  <div
-                    className={`toggle-option ${workflowMode === 'manual' ? 'active' : ''}`}
-                    onClick={() => !isWorkflowRunning && setWorkflowMode('manual')}
-                    style={{ cursor: isWorkflowRunning ? 'not-allowed' : 'pointer', opacity: isWorkflowRunning ? 0.6 : 1 }}
-                    title="수동 모드: 사용자가 직접 확인 후 진행"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M12 11C14.2091 11 16 9.20914 16 7C16 4.79086 14.2091 3 12 3C9.79086 3 8 4.79086 8 7C8 9.20914 9.79086 11 12 11Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                      <path d="M6 21V19C6 17.9391 6.42143 16.9217 7.17157 16.1716C7.92172 15.4214 8.93913 15 10 15H14C15.0609 15 16.0783 15.4214 16.8284 16.1716C17.5786 16.9217 18 17.9391 18 19V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                    수동
-                  </div>
-                  <div className={`toggle-slider ${workflowMode === 'auto' ? 'auto-mode' : 'manual-mode'}`} />
-                </div>
-              </div>
-            </div>
-
+          {/* Top: Configuration Form (Full Width) */}
+          <div className="glass-card config-panel config-panel-full">
             <form onSubmit={handleSubmit}>
               <div className="form-section-title">함 구성</div>
-              <div className="input-row-split" style={{ marginBottom: '40px' }}>
-                <div className="form-group" style={{ marginBottom: 0 }}>
-                  <NumberStepper
-                    label="열 (Column)"
-                    name="columns"
-                    value={formData.columns}
-                    onChange={handleStepperChange}
-                    min={1}
-                    max={20}
-                    suffix="열"
-                  />
+              <div className="config-row-inline">
+                <NumberStepper
+                  name="columns"
+                  value={formData.columns}
+                  onChange={handleStepperChange}
+                  min={1}
+                  max={20}
+                  suffix="열"
+                />
+                <span className="config-separator">×</span>
+                <NumberStepper
+                  name="tiers"
+                  value={formData.tiers}
+                  onChange={handleStepperChange}
+                  min={1}
+                  max={10}
+                  suffix="단"
+                />
+                <span className="config-divider"></span>
+                <span className="config-label">함 높이</span>
+                <div className="toggle-tabs">
+                  <button
+                    type="button"
+                    className={`toggle-tab ${formData.tierConfig.type === 'uniform' ? 'active' : ''}`}
+                    onClick={() => setFormData(prev => ({
+                      ...prev,
+                      tierConfig: { type: 'uniform', ratios: null }
+                    }))}
+                  >
+                    균등
+                  </button>
+                  <button
+                    type="button"
+                    className={`toggle-tab ${formData.tierConfig.type === 'custom' ? 'active' : ''}`}
+                    onClick={() => setFormData(prev => ({
+                      ...prev,
+                      tierConfig: { type: 'custom', ratios: new Array(prev.tiers).fill(1) }
+                    }))}
+                  >
+                    비균등
+                  </button>
                 </div>
-                <div className="form-group" style={{ marginBottom: 0 }}>
-                  <NumberStepper
-                    label="단 (Box)"
-                    name="tiers"
-                    value={formData.tiers}
-                    onChange={handleStepperChange}
-                    min={1}
-                    max={10}
-                    suffix="단"
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label>제어부 위치 (Control Panel Location)</label>
+                <span className="config-divider"></span>
+                <span className="config-label">제어부 위치</span>
                 <div className="cp-selector-container">
-                  <p className="helper-text">Select which column will contain the Control PC:</p>
                   {renderColumnSelector()}
                 </div>
-              </div>
-
-              <div className="input-row-split">
-                <div className="form-group" style={{ marginBottom: 0 }}>
-                  <NumberStepper
-                    label="제어부 단수"
-                    name="controlPanelTiers"
-                    value={formData.controlPanelTiers}
-                    onChange={handleStepperChange}
-                    min={1}
-                    max={Math.max(1, formData.tiers - 2)}
-                    suffix="단"
-                  />
-                </div>
-                <div className="form-group" style={{ marginBottom: 0 }}>
-                  <NumberStepper
-                    label="제어부 세트 수 (Set)"
-                    name="quantity"
-                    value={formData.quantity}
-                    onChange={handleStepperChange}
-                    min={1}
-                    suffix="세트"
-                  />
-                </div>
-              </div>
-
-              <div className="form-section-title">프레임 옵션</div>
-              <div className="form-group">
-                <div className="radio-group">
-                  <label className="radio-label">
-                    <input
-                      type="radio"
-                      name="frameType"
-                      value="none"
-                      checked={formData.options.frameType === 'none'}
-                      onChange={handleOptionChange}
-                    />
-                    <span>없음</span>
-                  </label>
-                  <label className="radio-label">
-                    <input
-                      type="radio"
-                      name="frameType"
-                      value="fullSet"
-                      checked={formData.options.frameType === 'fullSet'}
-                      onChange={handleOptionChange}
-                    />
-                    <span>프레임 풀세트 (+₩700,000)</span>
-                  </label>
-                  <label className="radio-label">
-                    <input
-                      type="radio"
-                      name="frameType"
-                      value="topOnly"
-                      checked={formData.options.frameType === 'topOnly'}
-                      onChange={handleOptionChange}
-                    />
-                    <span>상부 프레임만 (+₩350,000)</span>
-                  </label>
-                  <label className="radio-label">
-                    <input
-                      type="radio"
-                      name="frameType"
-                      value="sideOnly"
-                      checked={formData.options.frameType === 'sideOnly'}
-                      onChange={handleOptionChange}
-                    />
-                    <span>사이드 프레임만 (+₩350,000)</span>
-                  </label>
-                </div>
-              </div>
-
-              <div className="form-section-title">기타 옵션</div>
-              <div className="form-group">
-                <div className="checkbox-group">
-                  <label className="checkbox-label">
-                    <input
-                      type="checkbox"
-                      name="dualController"
-                      checked={formData.options.dualController}
-                      onChange={handleOptionChange}
-                    />
-                    <span>듀얼컨트롤러 (+₩200,000)</span>
-                  </label>
-                  <label className="checkbox-label">
-                    <input
-                      type="checkbox"
-                      name="acrylic"
-                      checked={formData.options.acrylic}
-                      onChange={handleOptionChange}
-                    />
-                    <span>아크릴 도어 (+₩6,000)</span>
-                  </label>
-                </div>
-              </div>
-
-              <div className="form-section-title">고객 정보</div>
-
-              <div className="form-group">
-                <label>업체명</label>
-                <input
-                  type="text"
-                  name="companyName"
-                  value={formData.companyName}
-                  onChange={handleChange}
-                  placeholder="예: (주)에이아이"
+                <span className="config-gap"></span>
+                <span className="config-label">제어부 단수</span>
+                <NumberStepper
+                  name="controlPanelTiers"
+                  value={formData.controlPanelTiers}
+                  onChange={handleStepperChange}
+                  min={1}
+                  max={Math.max(1, formData.tiers - 2)}
+                  suffix="단"
+                />
+                <span className="config-divider"></span>
+                <span className="config-label">세트 수</span>
+                <NumberStepper
+                  name="quantity"
+                  value={formData.quantity}
+                  onChange={handleStepperChange}
+                  min={1}
+                  suffix="세트"
+                  className="stepper-narrow"
                 />
               </div>
 
-              <div className="input-row-split">
-                <div className="form-group">
-                  <label>연락처</label>
-                  <input
-                    type="text"
-                    name="contact"
-                    value={formData.contact}
-                    onChange={handleChange}
-                    placeholder="010-0000-0000"
-                  />
+              {/* 커스텀 높이 설정 (비균등 선택시만 표시) */}
+              {formData.tierConfig.type === 'custom' && (
+                <div className="custom-tier-editor">
+                  {/* 미리보기 열 */}
+                  <div className="tier-preview-column">
+                    {Array.from({ length: formData.tiers }, (_, i) => {
+                      const ratio = formData.tierConfig.ratios?.[i] || 1;
+                      const totalRatio = (formData.tierConfig.ratios || []).reduce((sum, r) => sum + (r || 1), 0) || formData.tiers;
+                      const heightPercent = (ratio / totalRatio) * 100;
+                      return (
+                        <div
+                          key={i}
+                          className="tier-preview-cell"
+                          style={{ flex: ratio }}
+                        >
+                          <span>{i + 1}단</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {/* 슬라이더 열 */}
+                  <div className="tier-sliders-column">
+                    {Array.from({ length: formData.tiers }, (_, i) => (
+                      <div key={i} className="tier-slider-row">
+                        <input
+                          type="range" min="0.5" max="2" step="0.1"
+                          value={formData.tierConfig.ratios?.[i] || 1}
+                          onChange={(e) => {
+                            const newRatios = [...(formData.tierConfig.ratios || new Array(formData.tiers).fill(1))];
+                            newRatios[i] = parseFloat(e.target.value);
+                            setFormData(prev => ({ ...prev, tierConfig: { ...prev.tierConfig, ratios: newRatios } }));
+                          }}
+                        />
+                        <span className="ratio-value">{(formData.tierConfig.ratios?.[i] || 1).toFixed(1)}x</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <div className="form-group">
-                  <label>이메일</label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    placeholder="example@email.com"
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label>설치 지역 (Installation Region)</label>
-                <select name="region" value={formData.region} onChange={handleChange}>
-                  <option value="seoul">서울 (+₩500,000)</option>
-                  <option value="gyeonggi">경기 (+₩500,000)</option>
-                  <option value="incheon">인천 (+₩500,000)</option>
-                  <option value="chungcheong">충청 (+₩650,000)</option>
-                  <option value="gangwon">강원 (+₩650,000)</option>
-                  <option value="jeolla">전라 (+₩750,000)</option>
-                  <option value="gyeongsang">경상 (+₩750,000)</option>
-                  <option value="jeju">제주 (+₩1,100,000)</option>
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label>상세 설치 장소</label>
-                <input
-                  type="text"
-                  name="detailedLocation"
-                  value={formData.detailedLocation}
-                  onChange={handleChange}
-                  placeholder="예: 회사 1층 로비"
-                />
-              </div>
-
-              {workflowMode === 'auto' ? (
-                <button
-                  type="button"
-                  className="btn-primary"
-                  onClick={executeAutoWorkflow}
-                  disabled={isWorkflowRunning || loading || generating3D}
-                >
-                  {isWorkflowRunning ? (
-                    <>
-                      <span className="btn-spinner"></span>
-                      자동 생성 중...
-                    </>
-                  ) : (
-                    '🚀 견적서 만들기'
-                  )}
-                </button>
-              ) : (
-                <button type="submit" className="btn-primary" disabled={loading}>
-                  {loading ? '계산 중...' : '레이아웃 & 견적 생성'}
-                </button>
               )}
+
+              {/* 옵션 행: 프레임, 색상, 기타옵션 */}
+              <div className="options-row">
+                {/* 프레임 옵션 */}
+                <div className="option-group">
+                  <label>프레임</label>
+                  <div className="toggle-tabs">
+                    <button
+                      type="button"
+                      className={`toggle-tab ${formData.options.frameType === 'none' ? 'active' : ''}`}
+                      onClick={() => setFormData(prev => ({ ...prev, options: { ...prev.options, frameType: 'none' } }))}
+                    >
+                      없음
+                    </button>
+                    <button
+                      type="button"
+                      className={`toggle-tab ${formData.options.frameType === 'fullSet' ? 'active' : ''}`}
+                      onClick={() => setFormData(prev => ({ ...prev, options: { ...prev.options, frameType: 'fullSet' } }))}
+                    >
+                      풀옵션
+                    </button>
+                    <button
+                      type="button"
+                      className={`toggle-tab ${formData.options.frameType === 'topOnly' ? 'active' : ''}`}
+                      onClick={() => setFormData(prev => ({ ...prev, options: { ...prev.options, frameType: 'topOnly' } }))}
+                    >
+                      상부만
+                    </button>
+                    <button
+                      type="button"
+                      className={`toggle-tab ${formData.options.frameType === 'sideOnly' ? 'active' : ''}`}
+                      onClick={() => setFormData(prev => ({ ...prev, options: { ...prev.options, frameType: 'sideOnly' } }))}
+                    >
+                      사이드만
+                    </button>
+                  </div>
+                </div>
+
+                {/* 색상 */}
+                <div className="option-group">
+                  <label>함 색상</label>
+                  <div className="color-selector compact">
+                    {[
+                      { id: 'white', hex: '#FFFFFF', name: '화이트' },
+                      { id: 'ivory', hex: '#FFFFF0', name: '아이보리' },
+                      { id: 'black', hex: '#2C2C2C', name: '블랙' }
+                    ].map(color => (
+                      <button
+                        key={color.id}
+                        type="button"
+                        className={`color-btn ${formData.options.lockerColor === color.id ? 'active' : ''}`}
+                        style={{ backgroundColor: color.hex, border: color.id !== 'black' ? '1px solid #ccc' : 'none' }}
+                        onClick={() => setFormData(prev => ({ ...prev, options: { ...prev.options, lockerColor: color.id } }))}
+                        data-tooltip={color.name}
+                      >
+                        {formData.options.lockerColor === color.id && <span className="color-check">✓</span>}
+                      </button>
+                    ))}
+                    <label className={`color-btn ${formData.options.lockerColor === 'custom' ? 'active' : 'rainbow'}`}
+                      style={formData.options.lockerColor === 'custom' ? { backgroundColor: formData.options.customColor } : {}}
+                      data-tooltip="커스텀">
+                      <input type="color" className="hidden-color-input" value={formData.options.customColor}
+                        onChange={(e) => setFormData(prev => ({ ...prev, options: { ...prev.options, lockerColor: 'custom', customColor: e.target.value } }))} />
+                      {formData.options.lockerColor === 'custom' && <span className="color-check">✓</span>}
+                    </label>
+                  </div>
+                </div>
+
+                {/* 기타 옵션 */}
+                <div className="option-group">
+                  <label>추가옵션</label>
+                  <div className="checkbox-row">
+                    <label className="chip-checkbox">
+                      <input type="checkbox" name="handle" checked={formData.options.handle} onChange={handleOptionChange} />
+                      <span>손잡이</span>
+                    </label>
+                    <label className="chip-checkbox">
+                      <input type="checkbox" name="dualController" checked={formData.options.dualController} onChange={handleOptionChange} />
+                      <span>듀얼컨트롤러</span>
+                    </label>
+                    <label className="chip-checkbox">
+                      <input type="checkbox" name="acrylic" checked={formData.options.acrylic} onChange={handleOptionChange} />
+                      <span>아크릴도어</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              {/* 고객 정보 행 */}
+              <div className="form-section-title">고객 정보</div>
+              <div className="customer-info-row">
+                <div className="option-group">
+                  <label>업체명</label>
+                  <input type="text" name="companyName" value={formData.companyName} onChange={handleChange} placeholder="(주)에이아이" />
+                </div>
+                <div className="option-group">
+                  <label>연락처</label>
+                  <input type="text" name="contact" value={formData.contact} onChange={handleChange} placeholder="010-0000-0000" />
+                </div>
+                <div className="option-group">
+                  <label>이메일</label>
+                  <input type="email" name="email" value={formData.email} onChange={handleChange} placeholder="example@email.com" />
+                </div>
+                <div className="option-group">
+                  <label>설치지역</label>
+                  <select name="region" value={formData.region} onChange={handleChange}>
+                    <option value="seoul">서울 (+50만)</option>
+                    <option value="gyeonggi">경기 (+50만)</option>
+                    <option value="incheon">인천 (+50만)</option>
+                    <option value="chungcheong">충청 (+65만)</option>
+                    <option value="gangwon">강원 (+65만)</option>
+                    <option value="jeolla">전라 (+75만)</option>
+                    <option value="gyeongsang">경상 (+75만)</option>
+                    <option value="jeju">제주 (+110만)</option>
+                  </select>
+                </div>
+                <div className="option-group">
+                  <label>상세 장소</label>
+                  <input type="text" name="detailedLocation" value={formData.detailedLocation} onChange={handleChange} placeholder="회사 1층 로비" />
+                </div>
+
+                {/* 견적 생성 버튼 */}
+                <div className="option-group submit-btn-group">
+                  <div
+                    className={`mode-switch ${workflowMode === 'auto' ? 'auto' : 'manual'}`}
+                    onClick={() => !isWorkflowRunning && setWorkflowMode(workflowMode === 'auto' ? 'manual' : 'auto')}
+                    style={{ opacity: isWorkflowRunning ? 0.6 : 1, cursor: isWorkflowRunning ? 'not-allowed' : 'pointer' }}
+                  >
+                    <span className={workflowMode === 'auto' ? 'active' : ''}>에이전트</span>
+                    <span className={workflowMode === 'manual' ? 'active' : ''}>수동모드</span>
+                    <div className="switch-slider" />
+                  </div>
+                  {workflowMode === 'auto' ? (
+                    <button
+                      type="button"
+                      className="btn-primary btn-compact"
+                      onClick={executeAutoWorkflow}
+                      disabled={isWorkflowRunning || loading || generating3D}
+                    >
+                      {isWorkflowRunning ? '생성 중...' : '견적서 요청'}
+                    </button>
+                  ) : (
+                    <button type="submit" className="btn-primary btn-compact" disabled={loading}>
+                      {loading ? '계산 중...' : '레이아웃 그리기'}
+                    </button>
+                  )}
+                </div>
+              </div>
             </form>
           </div>
 
-          {/* Right: Preview & Results */}
-          <div className="glass-card preview-card" ref={resultSectionRef}>
-            <h2>
-              <div className="icon-box">🖊️</div>
-              레이아웃 & 견적
-            </h2>
+          {/* Bottom: Layout Preview + Quote Summary in 2 columns */}
+          <div className="bottom-grid">
+            {/* Left: Layout Preview */}
+            <div className="glass-card preview-card" ref={resultSectionRef}>
+              <h2>레이아웃 이미지</h2>
 
-
-            <div className="preview-stage">
+              <div className="preview-stage">
               {/* View Mode Toggle */}
               {previewImage && generatedImage && (
                 <div className="view-mode-toggle">
@@ -1152,8 +1187,13 @@ function App({ user, onLogout }) {
                 ⚠️ {error}
               </div>
             )}
+          </div>
 
-            {result && (
+          {/* Right: Quote Summary */}
+          <div className="glass-card quote-summary-card">
+            <h2>견적 요약</h2>
+
+            {result ? (
               <div className="results-container">
                 <div className="stats-grid">
                   <div className="stat-item">
@@ -1172,7 +1212,6 @@ function App({ user, onLogout }) {
 
                 {/* Itemized Breakdown */}
                 <div className="price-breakdown">
-                  <h3>견적 요약</h3>
 
                   {/* 제품 섹션 */}
                   <div className="breakdown-section-title">제품</div>
@@ -1266,13 +1305,17 @@ function App({ user, onLogout }) {
                   </div>
                 </div>
               </div>
+            ) : (
+              <div className="empty-quote-summary">
+                <span>견적 생성 버튼을 눌러주세요</span>
+              </div>
             )}
+          </div>
+          </div>
+          {/* End of bottom-grid */}
 
-            {/* 완성된 견적서 확인 및 수정 패널 */}
-
-
-            {/* 3D Warning Modal */}
-            {showThreeDWarning && (
+          {/* 3D Warning Modal */}
+          {showThreeDWarning && (
               <div className="excel-loading-modal" style={{ zIndex: 1000 }}>
                 <div className="excel-loading-content" style={{ maxWidth: '400px' }}>
                   <div className="excel-loading-icon">
@@ -1330,7 +1373,6 @@ function App({ user, onLogout }) {
                 </div>
               </div>
             )}
-          </div>
         </div>
       ) : (
         <DataSection inquiries={inquiries} onApplyInquiry={handleApplyInquiry} />

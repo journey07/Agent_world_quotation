@@ -9,7 +9,8 @@ const NumberStepper = ({
     max = 100,
     step = 1,
     suffix = '',
-    name
+    name,
+    className = ''
 }) => {
     const [inputValue, setInputValue] = useState(value);
 
@@ -62,7 +63,7 @@ const NumberStepper = ({
     };
 
     return (
-        <div className="number-stepper">
+        <div className={`number-stepper ${className}`}>
             {label && <label className="stepper-label">{label}</label>}
             <div className="stepper-control">
                 <button

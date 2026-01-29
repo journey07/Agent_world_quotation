@@ -93,6 +93,7 @@ Requirements:
 - The locker should appear as a standalone piece of equipment placed in a real environment
 - Polished concrete or wooden floor visible at the bottom if appropriate for the setting
 - Subtle environmental reflections on the locker surface
+- IMPORTANT: Maintain the exact same colors as shown in the input image. Do not change the locker color or frame color.
 ${frameDescription}
 ${countDescription}
 

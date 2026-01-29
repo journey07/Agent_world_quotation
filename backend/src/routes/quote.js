@@ -11,12 +11,17 @@ import { verifyConnection } from '../services/geminiService.js';
 const router = Router();
 
 /**
+ * Valid tier config types
+ */
+const VALID_TIER_CONFIG_TYPES = ['uniform', 'topLarge', 'bottomLarge', 'bothLarge', 'custom'];
+
+/**
  * Validate locker configuration input
  */
 function validateInput(body) {
     const errors = [];
 
-    const { columns, tiers, quantity, controlPanelTiers, region, options } = body;
+    const { columns, tiers, quantity, controlPanelTiers, region, options, tierConfig } = body;
 
     if (!columns || typeof columns !== 'number' || columns < 1 || columns > 20) {
         errors.push('columns must be a number between 1 and 20');
@@ -43,6 +48,26 @@ function validateInput(body) {
         const validFrameTypes = ['none', 'fullSet', 'topOnly', 'sideOnly', 'topAndSide'];
         if (!validFrameTypes.includes(options.frameType)) {
             errors.push(`frameType must be one of: ${validFrameTypes.join(', ')}`);
+        }
+    }
+
+    // Validate tierConfig if provided
+    if (tierConfig) {
+        if (!tierConfig.type || !VALID_TIER_CONFIG_TYPES.includes(tierConfig.type)) {
+            errors.push(`tierConfig.type must be one of: ${VALID_TIER_CONFIG_TYPES.join(', ')}`);
+        }
+
+        if (tierConfig.type === 'custom') {
+            if (!Array.isArray(tierConfig.ratios)) {
+                errors.push('tierConfig.ratios must be an array when type is custom');
+            } else if (tierConfig.ratios.length !== tiers) {
+                errors.push(`tierConfig.ratios length (${tierConfig.ratios.length}) must match tiers (${tiers})`);
+            } else {
+                const invalidRatios = tierConfig.ratios.filter(r => typeof r !== 'number' || r < 0.5 || r > 2);
+                if (invalidRatios.length > 0) {
+                    errors.push('tierConfig.ratios values must be numbers between 0.5 and 2');
+                }
+            }
         }
     }
 
@@ -271,7 +296,7 @@ router.post('/excel', async (req, res) => {
 router.post('/preview-image', async (req, res) => {
     const startTime = Date.now();
     try {
-        const { columns, tiers, controlPanelColumn, controlPanelTiers, frameType } = req.body;
+        const { columns, tiers, controlPanelColumn, controlPanelTiers, frameType, lockerColor, customColor, handle, tierConfig } = req.body;
 
         if (!columns || columns < 1 || columns > 20) {
             return res.status(400).json({ error: 'columns must be between 1 and 20' });
@@ -280,10 +305,26 @@ router.post('/preview-image', async (req, res) => {
             return res.status(400).json({ error: 'tiers must be between 1 and 10' });
         }
 
+        // Validate tierConfig if provided
+        if (tierConfig) {
+            if (!tierConfig.type || !VALID_TIER_CONFIG_TYPES.includes(tierConfig.type)) {
+                return res.status(400).json({ error: `tierConfig.type must be one of: ${VALID_TIER_CONFIG_TYPES.join(', ')}` });
+            }
+            if (tierConfig.type === 'custom') {
+                if (!Array.isArray(tierConfig.ratios) || tierConfig.ratios.length !== tiers) {
+                    return res.status(400).json({ error: 'tierConfig.ratios must be an array matching tiers count' });
+                }
+            }
+        }
+
         const base64 = await generateLockerGridBase64(columns, tiers, {
             controlPanelColumn: controlPanelColumn || 0,
             controlPanelTiers: controlPanelTiers || 4,
-            frameType: frameType || 'none'
+            frameType: frameType || 'none',
+            lockerColor: lockerColor || 'black',
+            customColor: customColor || '#808080',
+            handle: handle || false,
+            tierConfig: tierConfig || { type: 'uniform' }
         });
 
         // Create detailed log

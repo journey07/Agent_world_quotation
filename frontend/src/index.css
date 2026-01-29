@@ -61,9 +61,8 @@ header {
 
 .title-group {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
-  align-self: center;
+  align-items: center;
+  gap: 24px;
 }
 
 .title-row {
@@ -125,13 +124,16 @@ h1 {
   align-items: center;
   gap: 12px;
   align-self: center;
+  margin-top: 12px;
+  position: absolute;
+  right: 24px;
 }
 
 .logout-button {
   padding: 8px 16px;
   background: transparent;
-  color: var(--text-secondary, #475569);
-  border: 1px solid var(--border-color, #e2e8f0);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   font-size: 14px;
   font-weight: 500;
@@ -145,24 +147,15 @@ h1 {
   border-color: var(--text-secondary, #475569);
 }
 
-.tab-buttons-center {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 12px;
-  flex-wrap: wrap;
-}
-
 .tab-buttons {
   display: flex;
-  gap: 6px;
+  gap: 4px;
   background: #f1f5f9;
-  padding: 5px;
-  border-radius: 14px;
+  padding: 3px;
+  border-radius: 10px;
   border: 1px solid var(--border-color);
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
-  position: relative;
+  margin-top: 12px;
 }
 
 /* Stylish Toggle Switch */
@@ -191,8 +184,8 @@ h1 {
   display: flex;
   position: relative;
   background: #f1f5f9;
-  border-radius: 12px;
-  padding: 4px;
+  border-radius: 8px;
+  padding: 3px;
   border: 1px solid var(--border-color);
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
   cursor: pointer;
@@ -202,15 +195,15 @@ h1 {
 .toggle-option {
   position: relative;
   z-index: 2;
-  padding: 6px 12px;
-  font-size: 0.85rem;
+  padding: 4px 10px;
+  font-size: 0.8rem;
   font-weight: 600;
   color: var(--text-secondary);
   transition: all 0.3s ease;
-  border-radius: 8px;
+  border-radius: 6px;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   background: transparent;
 }
 
@@ -220,8 +213,8 @@ h1 {
 }
 
 .toggle-option svg {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   transition: all 0.3s ease;
 }
 
@@ -232,9 +225,9 @@ h1 {
 
 .toggle-slider {
   position: absolute;
-  top: 4px;
-  left: 4px;
-  width: calc(50% - 4px);
+  top: 3px;
+  left: 3px;
+  width: calc(50% - 3px);
   height: calc(100% - 8px);
   background: white;
   border-radius: 8px;
@@ -322,20 +315,20 @@ h1 {
 }
 
 .tab-btn {
-  padding: 7px 24px;
+  padding: 6px 16px;
   border: none;
   background: transparent;
   font-family: inherit;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   font-weight: 600;
   color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   position: relative;
-  border-radius: 9px;
+  border-radius: 7px;
 }
 
 .tab-btn:hover {
@@ -416,14 +409,436 @@ h1 {
 
 /* Layout */
 .grid-container {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+/* 상단: 보관함 구성 (가로로 길게, 컴팩트) */
+.config-panel-full {
+  width: 100%;
+  padding: 12px 20px;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.config-panel-full > h2 {
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+}
+
+.config-panel-full .config-header-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: none;
+}
+
+.config-panel-full .config-header-row h2 {
+  margin: 0;
+  padding: 0;
+  border: none;
+  font-size: 1.1rem;
+}
+
+.config-panel-full form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 32px;
+  align-items: flex-end;
+}
+
+.config-panel-full .form-section-title {
+  width: 100%;
+  margin: 8px 0 -4px 0;
+  padding-bottom: 0;
+  font-size: 1.1rem;
+  color: #000;
+}
+
+.config-panel-full .form-group {
+  margin-bottom: 0;
+  flex: 0 0 auto;
+  min-width: 120px;
+}
+
+.config-panel-full .form-group label {
+  font-size: 0.85rem;
+  margin-bottom: 4px;
+}
+
+.config-panel-full .form-group input,
+.config-panel-full .form-group select {
+  padding: 8px 12px;
+  font-size: 0.9rem;
+}
+
+.config-panel-full .input-row-split {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 0;
+}
+
+
+.config-panel-full .action-buttons,
+.config-panel-full .btn-primary {
+  margin: 0;
+  padding: 10px 24px;
+}
+
+.config-panel-full .tier-toggle-group {
+  margin: 0;
+}
+
+.config-panel-full .non-uniform-options {
+  margin-bottom: 0;
+}
+
+.config-panel-full .checkbox-group {
+  flex-direction: row;
+  gap: 16px;
+}
+
+.config-panel-full .checkbox-label {
+  font-size: 0.85rem;
+}
+
+/* 옵션 행 (가로 배치) */
+.options-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  align-items: flex-start;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 8px;
+}
+
+.customer-info-row {
+  display: flex;
+  margin-top: -5px;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  align-items: flex-end;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.option-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 100px;
+}
+
+.option-group label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.option-group select,
+.option-group input {
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: white;
+  height: 36px;
+  box-sizing: border-box;
+}
+
+.option-group select {
+  min-width: 120px;
+  cursor: pointer;
+}
+
+/* 체크박스 행 */
+.checkbox-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.chip-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  background: white;
+}
+
+.chip-checkbox:has(input:checked) {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.chip-checkbox input {
+  display: none;
+}
+
+/* 컴팩트 색상 선택기 */
+.color-selector.compact {
+  display: flex;
+  gap: 6px;
+}
+
+.color-selector.compact .color-btn {
+  width: 28px;
+  height: 28px;
+}
+
+/* 커스텀 높이 에디터 */
+.custom-tier-editor {
+  display: flex;
+  gap: 24px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 8px;
+  margin-top: 12px;
+  margin-left: 310px;
+  align-items: stretch;
+  width: fit-content;
+}
+
+/* 미리보기 열 */
+.tier-preview-column {
+  display: flex;
+  flex-direction: column;
+  width: 60px;
+  height: 200px;
+  border: 1px solid #1a1a1a;
+  border-radius: 6px;
+  overflow: hidden;
+  background: white;
+}
+
+.tier-preview-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  color: #1a1a1a;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-bottom: 1px solid #1a1a1a;
+  transition: flex 0.2s ease;
+}
+
+.tier-preview-cell:last-child {
+  border-bottom: none;
+}
+
+/* 슬라이더 열 */
+.tier-sliders-column {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  height: 200px;
+  flex: 1;
+  max-width: 200px;
+}
+
+.tier-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tier-slider-row input[type="range"] {
+  flex: 1;
+  height: 4px;
+  cursor: pointer;
+}
+
+.tier-slider-row .ratio-value {
+  min-width: 36px;
+  text-align: right;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+/* 컴팩트 버튼 */
+.btn-compact {
+  padding: 8px 20px !important;
+  font-size: 0.9rem !important;
+  white-space: nowrap;
+  margin: 0 !important;
+}
+
+.submit-btn-group {
+  margin-left: auto;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* 함 구성 인라인 */
+.config-row-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.config-separator {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin: 0 2px;
+}
+
+.config-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--border-color);
+  margin: 0 8px;
+}
+
+.config-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  height: 28px;
+}
+
+.config-gap {
+  width: 12px;
+}
+
+/* 자동/수동 슬라이딩 스위치 */
+.mode-switch {
+  display: flex;
+  align-items: center;
+  position: relative;
+  background: #e2e8f0;
+  border-radius: 20px;
+  padding: 4px;
+  width: 160px;
+  height: 34px;
+  box-sizing: border-box;
+  transition: background 0.2s;
+}
+
+.mode-switch span {
+  flex: 1;
+  text-align: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #64748b;
+  z-index: 1;
+  transition: color 0.2s;
+  user-select: none;
+}
+
+.mode-switch span.active {
+  color: white;
+}
+
+.mode-switch .switch-slider {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: calc(50% - 4px);
+  height: calc(100% - 8px);
+  background: var(--primary);
+  border-radius: 16px;
+  transition: transform 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.mode-switch.manual .switch-slider {
+  transform: translateX(100%);
+}
+
+.inline-select {
+  height: 28px;
+  padding: 0 8px;
+  font-size: 0.8rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: white;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+/* Toggle tabs for 균등/비균등 */
+.toggle-tabs {
+  display: flex;
+  gap: 6px;
+}
+
+.toggle-tab {
+  padding: 6px 10px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: white;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.toggle-tab:hover {
+  background: var(--bg-secondary);
+}
+
+.toggle-tab.active {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.option-group-inline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.option-group-inline label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+/* 하단: 레이아웃 + 견적 요약 2열 */
+.bottom-grid {
   display: grid;
-  grid-template-columns: 420px 1fr;
+  grid-template-columns: 1fr 420px;
   gap: 32px;
   align-items: start;
 }
 
 @media (max-width: 1024px) {
-  .grid-container {
+  .config-panel-full form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .config-panel-full .form-group {
+    width: 100%;
+  }
+
+  .bottom-grid {
     grid-template-columns: 1fr;
   }
 }
@@ -440,14 +855,14 @@ h1 {
 }
 
 .form-section-title {
-  font-size: 0.9rem;
+  font-size: 1.1rem;
   font-weight: 800;
-  color: var(--primary);
-  margin: 24px 0 16px 0;
+  color: #000;
+  margin: 24px 0 4px 0;
   display: flex;
   align-items: center;
   gap: 8px;
-  padding-bottom: 8px;
+  padding-bottom: 4px;
   border-bottom: 1px solid var(--border-color);
 }
 
@@ -548,16 +963,16 @@ h1 {
 }
 
 h2 {
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   margin-top: 0;
-  margin-bottom: 24px;
+  margin-bottom: 12px;
   display: flex;
   align-items: center;
   gap: 12px;
-  color: var(--text-main);
+  color: #000;
   font-weight: 700;
   border-bottom: 1px solid var(--border-color);
-  padding-bottom: 16px;
+  padding-bottom: 8px;
 }
 
 .icon-box {
@@ -633,32 +1048,31 @@ select:focus {
   /* Navy shadow */
 }
 
-/* Column Selector */
+/* Column Selector - Compact */
 .cp-selector-container {
-  background: #f8fafc;
-  padding: 16px;
-  border-radius: 12px;
-  border: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: transparent;
+  padding: 0;
+  border: none;
 }
 
 .helper-text {
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-  margin: 0 0 10px 0;
+  display: none;
 }
 
 .col-selector-grid {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  gap: 2px;
 }
 
 .col-selector-item {
-  width: 54px;
-  height: 50px;
-  background: white;
+  width: 32px;
+  height: 28px;
+  background: #f1f5f9;
   border: 1px solid var(--border-color);
-  border-radius: 8px;
+  border-radius: 4px;
   cursor: pointer;
   display: flex;
   flex-direction: column;
@@ -678,12 +1092,17 @@ select:focus {
   background: var(--primary);
   border-color: var(--primary);
   color: white;
-  box-shadow: 0 4px 6px -1px rgba(30, 58, 138, 0.2);
 }
 
 .col-num {
-  font-size: 0.9rem;
+  font-size: 0.7rem;
   font-weight: 600;
+  line-height: 1;
+}
+
+.col-icon {
+  font-size: 0.6rem;
+  line-height: 1;
 }
 
 /* Button */
@@ -783,6 +1202,15 @@ select:focus {
   font-size: 0.9rem;
   font-weight: 500;
   letter-spacing: 0.02em;
+}
+
+.empty-quote-summary {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  padding: 40px 20px;
+  text-align: center;
 }
 
 .stats-grid {
@@ -896,6 +1324,237 @@ select:focus {
 .radio-label span {
   flex: 1;
   user-select: none;
+}
+
+/* ===== Tier Height Config - 균등함/비균등함 ===== */
+
+/* 1단계: 균등함/비균등함 토글 버튼 그룹 */
+.tier-toggle-group {
+  display: flex;
+  gap: 0;
+  background: #f1f5f9;
+  border-radius: 10px;
+  padding: 4px;
+}
+
+.tier-toggle-btn {
+  flex: 1;
+  padding: 10px 20px;
+  border: none;
+  background: transparent;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text-sub);
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.tier-toggle-btn:hover {
+  color: var(--text-main);
+}
+
+.tier-toggle-btn.active {
+  background: white;
+  color: var(--primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* 2단계: 비균등함 하위 옵션 */
+.non-uniform-options {
+  margin-top: 12px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+}
+
+/* 프리셋 라벨 버튼 그룹 */
+.preset-label-group {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 8px;
+  margin-bottom: 0;
+}
+
+.preset-label-btn {
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  background: white;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-sub);
+  cursor: pointer;
+  border-radius: 20px;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.preset-label-btn.icon-btn {
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.preset-label-btn.icon-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.preset-label-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.preset-label-btn.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: white;
+}
+
+/* 3단계: 직접 설정 드래그 UI */
+.custom-tier-drag-ui {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-color);
+}
+
+.tier-visual-container {
+  display: flex;
+  gap: 24px;
+  align-items: stretch;
+}
+
+/* 왼쪽: 시각적 락커 미리보기 */
+.tier-visual-preview {
+  width: 60px;
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  border: 1.5px solid #64748b;
+  border-radius: 6px;
+  overflow: hidden;
+  background: white;
+}
+
+.tier-visual-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 1px solid var(--border-color);
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  transition: height 0.2s ease;
+  min-height: 20px;
+}
+
+.tier-visual-cell:last-child {
+  border-bottom: none;
+}
+
+.tier-visual-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-sub);
+}
+
+/* 오른쪽: 슬라이더 컨트롤 */
+.tier-slider-controls {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  justify-content: center;
+}
+
+.tier-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tier-slider-label {
+  width: 36px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-sub);
+}
+
+.tier-range-slider {
+  flex: 1;
+  height: 6px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: #e2e8f0;
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+  margin: 0;
+}
+
+.tier-range-slider::-webkit-slider-runnable-track {
+  height: 6px;
+  background: #e2e8f0;
+  border-radius: 3px;
+}
+
+.tier-range-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  background: var(--primary);
+  border-radius: 50%;
+  cursor: grab;
+  box-shadow: 0 2px 6px rgba(74, 111, 165, 0.3);
+  transition: transform 0.1s ease;
+  margin-top: -5px;
+}
+
+.tier-range-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+}
+
+.tier-range-slider::-webkit-slider-thumb:active {
+  cursor: grabbing;
+  transform: scale(1.15);
+}
+
+.tier-range-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: var(--primary);
+  border: none;
+  border-radius: 50%;
+  cursor: grab;
+  box-shadow: 0 2px 6px rgba(74, 111, 165, 0.3);
+}
+
+.tier-range-slider::-moz-range-track {
+  height: 6px;
+  background: #e2e8f0;
+  border-radius: 3px;
+}
+
+.tier-slider-value {
+  width: 40px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--primary);
+  text-align: right;
+}
+
+/* Legacy: 기존 호환성을 위한 스타일 유지 */
+.tier-config-group {
+  flex-direction: row !important;
+  flex-wrap: wrap;
+  gap: 8px !important;
+}
+
+.tier-config-group .radio-label {
+  padding: 8px 12px;
+  flex: none;
+  min-width: auto;
 }
 
 /* Price Breakdown */
@@ -1152,7 +1811,7 @@ select:focus {
 }
 
 .breakdown-item.subtotal-row {
-  margin-top: 8px;
+  margin-top: 12px;
 }
 
 .breakdown-item.final-total-row {
@@ -1438,4 +2097,115 @@ select:focus {
 
 .btn-slate:hover {
   background: #334155 !important;
+}
+
+/* Color Selector */
+.color-selector {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.color-btn {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  border-radius: 8px;
+  cursor: pointer;
+  position: relative;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+  vertical-align: middle;
+}
+
+.color-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Custom tooltip for color buttons */
+.color-btn::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: -28px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+  z-index: 100;
+}
+
+.color-btn:hover::after {
+  opacity: 1;
+}
+
+.color-btn.active {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  transform: scale(1.1);
+}
+
+.color-check {
+  color: white;
+  font-size: 16px;
+  font-weight: bold;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.color-btn.rainbow {
+  background: conic-gradient(
+    red,
+    orange,
+    yellow,
+    green,
+    cyan,
+    blue,
+    violet,
+    red
+  ) !important;
+  cursor: pointer;
+}
+
+.hidden-color-input {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+label.color-btn {
+  overflow: hidden;
+}
+
+.custom-color-input {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  background: transparent;
+}
+
+.custom-color-input::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.custom-color-input::-webkit-color-swatch {
+  border: 1px solid #ccc;
+  border-radius: 8px;
 }
