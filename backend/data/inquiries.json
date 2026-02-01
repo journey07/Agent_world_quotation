@@ -1,5 +1,317 @@
 [
   {
+    "id": 1769951859489,
+    "timestamp": "2026-02-01T13:17:39.489Z",
+    "status": "inquiry",
+    "columns": 20,
+    "tiers": 10,
+    "quantity": 1,
+    "controlPanelColumn": 2,
+    "controlPanelTiers": 3,
+    "tierConfig": {
+      "type": "uniform",
+      "ratios": null
+    },
+    "options": {
+      "dualController": false,
+      "acrylic": false,
+      "perforation": false,
+      "frameType": null,
+      "lockerColor": null,
+      "customColor": "#808080",
+      "handle": false
+    },
+    "region": null,
+    "installationBackground": "",
+    "companyName": "안녕고래짐",
+    "contact": "",
+    "email": "",
+    "detailedLocation": "",
+    "contactName": null,
+    "industry": "피트니스",
+    "installationDate": null,
+    "budget": null,
+    "total_lockers": 200,
+    "rawNote": "안녕고래짐, 200칸",
+    "summary": {
+      "subtotal": 12338000,
+      "quantity": 1,
+      "total": 12838000
+    },
+    "createdBy": "권인전"
+  },
+  {
+    "id": 1769951834911,
+    "timestamp": "2026-02-01T13:17:14.911Z",
+    "status": "inquiry",
+    "columns": 5,
+    "tiers": 6,
+    "quantity": 1,
+    "controlPanelColumn": 2,
+    "controlPanelTiers": 3,
+    "tierConfig": {
+      "type": "uniform",
+      "ratios": null
+    },
+    "options": {
+      "dualController": false,
+      "acrylic": false,
+      "perforation": false,
+      "frameType": null,
+      "lockerColor": "블루",
+      "customColor": "#808080",
+      "handle": false
+    },
+    "region": null,
+    "installationBackground": "",
+    "companyName": "",
+    "contact": "",
+    "email": "",
+    "detailedLocation": "",
+    "contactName": null,
+    "industry": null,
+    "installationDate": null,
+    "budget": null,
+    "total_lockers": 30,
+    "rawNote": "안녕고래파스타, 30칸, 블루",
+    "summary": {
+      "subtotal": 3674000,
+      "quantity": 1,
+      "total": 4174000
+    },
+    "createdBy": "권인전"
+  },
+  {
+    "id": 1769750733666,
+    "timestamp": "2026-01-30T05:25:33.666Z",
+    "columns": 22,
+    "tiers": 7,
+    "quantity": 1,
+    "controlPanelColumn": 2,
+    "controlPanelTiers": 3,
+    "tierConfig": {
+      "type": "uniform",
+      "ratios": null
+    },
+    "options": {
+      "lockerColor": "파란색",
+      "frameType": "풀옵션",
+      "handle": true,
+      "acrylic": true,
+      "dualController": false
+    },
+    "region": "",
+    "installationBackground": "",
+    "companyName": "해시드",
+    "contact": "",
+    "email": "",
+    "detailedLocation": "",
+    "contactName": "",
+    "industry": "",
+    "installationDate": "4.20",
+    "budget": null,
+    "total_lockers": 150,
+    "rawNote": "해시드, vc, 4.20 설치. 150칸, 2곳에 나눠서. 7단 구성. 파란색 도어. 프레임 사이드만. 손잡이 필요.",
+    "summary": {
+      "subtotal": 12830000,
+      "quantity": 1,
+      "total": 13330000
+    },
+    "createdBy": "권인전",
+    "updatedAt": "2026-01-30T05:40:57.483Z",
+    "status": "inquiry"
+  },
+  {
+    "id": 1769750389189,
+    "timestamp": "2026-01-30T05:19:49.189Z",
+    "columns": 20,
+    "tiers": 5,
+    "quantity": 3,
+    "controlPanelColumn": 2,
+    "controlPanelTiers": 3,
+    "tierConfig": {
+      "type": "uniform",
+      "ratios": null
+    },
+    "options": {
+      "dualController": false,
+      "acrylic": false,
+      "frameType": "필요 없음",
+      "lockerColor": "흰색",
+      "customColor": "#808080",
+      "handle": false
+    },
+    "region": null,
+    "installationBackground": "",
+    "companyName": "스테이지나인",
+    "contact": "",
+    "email": "",
+    "detailedLocation": "",
+    "contactName": null,
+    "industry": "공유오피스",
+    "installationDate": "5/3희망",
+    "budget": null,
+    "total_lockers": 330,
+    "rawNote": "스테이지나인, 공유오피스, 5/3희망. 330칸, 3곳에 나눠서. 5단 구성. 흰색 함. 프레임은 필요 없음.",
+    "summary": {
+      "subtotal": 10001000,
+      "quantity": 3,
+      "total": 30503000
+    },
+    "createdBy": "권인전",
+    "status": "sent",
+    "updatedAt": "2026-01-30T05:48:55.418Z"
+  },
+  {
+    "id": 1769750098378,
+    "timestamp": "2026-01-30T05:14:58.378Z",
+    "columns": 20,
+    "tiers": 10,
+    "quantity": 3,
+    "controlPanelColumn": 2,
+    "controlPanelTiers": 3,
+    "tierConfig": {
+      "type": "uniform",
+      "ratios": null
+    },
+    "options": {
+      "lockerColor": "오렌지색",
+      "frameType": "",
+      "handle": false,
+      "acrylic": false,
+      "dualController": false
+    },
+    "region": "송도",
+    "installationBackground": "",
+    "companyName": "스타헬스 클럽",
+    "contact": "010-9988-7766",
+    "email": "",
+    "detailedLocation": "",
+    "contactName": "",
+    "industry": "",
+    "installationDate": "3/5",
+    "budget": null,
+    "total_lockers": 205,
+    "rawNote": "stage9, 205칸, 3곳에 설치, 오렌지색 함, 3/5 희망. 송도",
+    "summary": {
+      "subtotal": 12338000,
+      "quantity": 3,
+      "total": 37514000
+    },
+    "createdBy": "권인전",
+    "status": "inquiry",
+    "updatedAt": "2026-01-30T05:46:47.744Z"
+  },
+  {
+    "id": 1769749228091,
+    "timestamp": "2026-01-30T05:00:28.091Z",
+    "columns": 5,
+    "tiers": 8,
+    "quantity": 1,
+    "controlPanelColumn": 2,
+    "controlPanelTiers": 3,
+    "tierConfig": {
+      "type": "uniform",
+      "ratios": null
+    },
+    "options": {
+      "dualController": false,
+      "acrylic": false,
+      "frameType": "none",
+      "lockerColor": "white",
+      "customColor": "#808080",
+      "handle": false
+    },
+    "region": "seoul",
+    "installationBackground": "",
+    "companyName": "크로스핏짐",
+    "contact": "010-1234-5678",
+    "email": "",
+    "detailedLocation": "",
+    "contactName": "홍길동",
+    "industry": "fitness",
+    "installationDate": "다음달 초",
+    "budget": null,
+    "함수": null,
+    "rawNote": "크로스핏짐, 300칸, 3세트, 8단 구성. 함체 블랙, 다음달 초 오픈 희망, 홍길동 010-1234-5678, 함체 빨간색으로",
+    "summary": {
+      "subtotal": 3862000,
+      "quantity": 1,
+      "total": 4362000
+    },
+    "createdBy": "권인전"
+  },
+  {
+    "id": 1769748413437,
+    "timestamp": "2026-01-30T04:46:53.437Z",
+    "columns": 5,
+    "tiers": 6,
+    "quantity": 1,
+    "controlPanelColumn": 2,
+    "controlPanelTiers": 3,
+    "tierConfig": {
+      "type": "uniform",
+      "ratios": null
+    },
+    "options": {
+      "lockerColor": "white",
+      "frameType": "fullSet",
+      "handle": true,
+      "acrylic": false,
+      "dualController": false
+    },
+    "region": "gyeonggi",
+    "installationBackground": "",
+    "companyName": "SK하이닉스",
+    "contact": "",
+    "email": "",
+    "detailedLocation": "",
+    "contactName": "",
+    "industry": "",
+    "installationDate": "2024-04-05",
+    "budget": null,
+    "함수": null,
+    "rawNote": "하이닉스, 450칸, 4군데 나눠서. 손잡이. 프레임 전부. 흰색 디자인. 4/5 희망. 이천 설치",
+    "summary": {
+      "subtotal": 4374000,
+      "quantity": 1,
+      "total": 4874000
+    },
+    "createdBy": "권인전",
+    "status": "ordered",
+    "updatedAt": "2026-01-30T05:49:03.018Z"
+  },
+  {
+    "id": 1769736393966,
+    "timestamp": "2026-01-30T01:26:33.966Z",
+    "companyName": "테스트 헬스장 수정",
+    "columns": 6,
+    "tiers": 10,
+    "region": "seoul",
+    "contact": "010-1234-5678",
+    "options": {
+      "lockerColor": "black",
+      "frameType": "fullSet",
+      "handle": false,
+      "acrylic": false,
+      "dualController": false
+    },
+    "summary": {
+      "subtotal": 5310000,
+      "quantity": 1,
+      "total": 5810000
+    },
+    "createdBy": null,
+    "updatedAt": "2026-01-30T05:49:04.332Z",
+    "email": "",
+    "quantity": 1,
+    "detailedLocation": "",
+    "industry": "",
+    "contactName": "",
+    "installationDate": "",
+    "status": "sent"
+  },
+  {
     "id": 1767877582582,
     "timestamp": "2026-01-08T13:06:22.582Z",
     "columns": 5,
@@ -22,7 +334,9 @@
       "subtotal": 5074000,
       "quantity": 1,
       "total": 5074000
-    }
+    },
+    "status": "ordered",
+    "updatedAt": "2026-01-30T05:49:01.498Z"
   },
   {
     "id": 1704739200002,
@@ -42,7 +356,9 @@
     },
     "summary": {
       "total": 5800000
-    }
+    },
+    "status": "sent",
+    "updatedAt": "2026-01-30T05:49:05.849Z"
   },
   {
     "id": 1704739200003,
@@ -82,7 +398,9 @@
     },
     "summary": {
       "total": 7500000
-    }
+    },
+    "status": "delivered",
+    "updatedAt": "2026-01-30T05:48:57.916Z"
   },
   {
     "id": 1704739200005,
@@ -102,6 +420,8 @@
     },
     "summary": {
       "total": 1800000
-    }
+    },
+    "status": "delivered",
+    "updatedAt": "2026-01-30T05:48:59.998Z"
   }
 ]

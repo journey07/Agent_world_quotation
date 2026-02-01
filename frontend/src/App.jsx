@@ -6,6 +6,7 @@ import DataSection from './components/DataSection';
 
 import WorkflowModal from './components/WorkflowModal';
 import NumberStepper from './components/NumberStepper';
+import ConsultationNoteModal from './components/ConsultationNoteModal';
 
 // 환경 변수에서 API URL 가져오기 (Vite는 import.meta.env 사용)
 // 프로덕션에서는 Vercel Backend 사용 (일반 API)
@@ -125,13 +126,19 @@ function App({ user, onLogout }) {
       type: 'uniform', // 'uniform', 'topLarge', 'bottomLarge', 'bothLarge', 'custom'
       ratios: null // Array of ratios when type is 'custom'
     },
+    // 열별 설정 배열 (columns 길이와 동기화)
+    columnConfigs: null, // null = 기본값 사용, 배열 = 열별 커스텀 설정
     options: {
       dualController: false,
       acrylic: false,
+      perforation: false, // 타공 디자인 옵션
       frameType: 'none', // 'none', 'fullSet', 'topOnly', 'sideOnly', 'topAndSide'
+      frameTextPreset: 'storage', // 'storage' | 'locker' | 'parcel' | 'custom'
+      frameTextCustom: '', // 직접입력 시 사용
       lockerColor: 'white', // 'white', 'ivory', 'black', 'custom'
       customColor: '#808080', // Custom hex color
-      handle: false // 손잡이 옵션
+      handle: false, // 손잡이 옵션
+      controllerType: 'standard' // 'qr', 'standard', 'barrier-free'
     },
     region: 'seoul',
     installationBackground: '깔끔하고 현대적인 오피스 빌딩 로비',
@@ -143,6 +150,8 @@ function App({ user, onLogout }) {
 
   const [result, setResult] = useState(null);
   const [previewImage, setPreviewImage] = useState(null);
+  // 이미지 생성 시점의 설정 (기본 구성과 독립)
+  const [previewConfig, setPreviewConfig] = useState(null);
   const [generatedImage, setGeneratedImage] = useState(null);
   const [loading, setLoading] = useState(false);
   const [generating3D, setGenerating3D] = useState(false);
@@ -152,10 +161,16 @@ function App({ user, onLogout }) {
   const [activeTab, setActiveTab] = useState('config'); // 'config' or 'data'
   const [showThreeDWarning, setShowThreeDWarning] = useState(false);
   const [inquiries, setInquiries] = useState([]);
+  const [openPopoverCol, setOpenPopoverCol] = useState(null); // 열별 높이 설정 팝오버 (null 또는 열 인덱스)
+  const [copiedTierConfig, setCopiedTierConfig] = useState(null); // 복사된 열 설정 { tiers, tierConfig }
   const resultSectionRef = useRef(null);
 
+  // 상담 노트 모달 상태
+  const [isConsultationModalOpen, setIsConsultationModalOpen] = useState(false);
+
+
   // 새로운 워크플로우 관련 상태 (기존 상태는 그대로 유지)
-  const [workflowMode, setWorkflowMode] = useState('auto'); // 'auto' | 'manual'
+  const [workflowMode, setWorkflowMode] = useState('manual'); // 'auto' | 'manual'
   const [isWorkflowRunning, setIsWorkflowRunning] = useState(false);
   const [workflowComplete, setWorkflowComplete] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -195,6 +210,22 @@ function App({ user, onLogout }) {
     }
   }, [formData.columns]);
 
+  // Sync columnConfigs when columns changes
+  useEffect(() => {
+    if (formData.columnConfigs) {
+      const currentConfigs = formData.columnConfigs;
+      if (currentConfigs.length !== formData.columns) {
+        // 열 수에 맞게 배열 조정
+        const newConfigs = Array.from({ length: formData.columns }, (_, i) =>
+          currentConfigs[i] !== undefined
+            ? currentConfigs[i]
+            : { tiers: formData.tiers, tierConfig: { type: 'uniform', ratios: null } }
+        );
+        setFormData(prev => ({ ...prev, columnConfigs: newConfigs }));
+      }
+    }
+  }, [formData.columns, formData.tiers]);
+
   // Ensure control panel tiers is valid when total tiers change (max = tiers - 2, 제어부가 2칸 차지)
   useEffect(() => {
     const maxCPTiers = Math.max(1, formData.tiers - 2);
@@ -227,6 +258,74 @@ function App({ user, onLogout }) {
     }
   }, [generatedImage, viewMode]);
 
+  // 팝오버 외부 클릭 시 닫기
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (openPopoverCol !== null && !e.target.closest('.tier-config-popover') && !e.target.closest('.tier-stepper-value')) {
+        setOpenPopoverCol(null);
+      }
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [openPopoverCol]);
+
+  // columnConfigs deep copy 헬퍼 (다른 열의 tierConfig 보존)
+  const deepCopyColumnConfigs = (configs) => {
+    if (!configs) return null;
+    return configs.map(col => ({
+      ...col,
+      tierConfig: col.tierConfig ? {
+        ...col.tierConfig,
+        ratios: col.tierConfig.ratios ? [...col.tierConfig.ratios] : null
+      } : { type: 'uniform', ratios: null }
+    }));
+  };
+
+  // 미리보기 이미지 갱신 함수 (이미지 위 버튼 클릭 시 호출)
+  // previewConfig를 사용하여 기본 구성과 독립적으로 동작
+  const refreshPreviewImage = async (updatedConfig = null) => {
+    const config = updatedConfig || previewConfig;
+    if (!previewImage || !config) return;
+
+    try {
+      const imgRes = await fetch(`${API_URL}/preview-image`, {
+        method: 'POST',
+        headers: getHeadersWithUser(user),
+        body: JSON.stringify({
+          columns: config.columns,
+          tiers: config.tiers,
+          controlPanelColumn: config.controlPanelColumn,
+          controlPanelTiers: config.controlPanelTiers,
+          controllerType: config.controllerType,
+          frameType: formData.options.frameType,
+          frameText: getFrameText(),
+          lockerColor: formData.options.lockerColor,
+          customColor: formData.options.customColor,
+          handle: formData.options.handle,
+          perforation: formData.options.perforation,
+          acrylic: formData.options.acrylic,
+          tierConfig: formData.tierConfig,
+          dualController: formData.options.dualController,
+          columnConfigs: config.columnConfigs
+        })
+      });
+
+      if (imgRes.ok) {
+        const imgData = await imgRes.json();
+        setPreviewImage(`data:image/png;base64,${imgData.image}`);
+        // 갱신된 config 저장
+        if (updatedConfig) {
+          setPreviewConfig(updatedConfig);
+        }
+      }
+    } catch (err) {
+      console.error('Preview refresh error:', err);
+    }
+  };
+
+  // 자동 갱신 제거 - '레이아웃 그리기' 버튼을 눌러야만 이미지 갱신
+  // 단, 이미지 위의 열별 단수 조절 버튼은 직접 refreshPreviewImage() 호출
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({
@@ -237,13 +336,22 @@ function App({ user, onLogout }) {
 
   const handleOptionChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      options: {
+    setFormData(prev => {
+      const newOptions = {
         ...prev.options,
         [name]: type === 'checkbox' ? checked : value
+      };
+      // 아크릴도어와 타공디자인은 상호 배타적 (둘 중 하나만 선택 가능)
+      if (name === 'acrylic' && checked) {
+        newOptions.perforation = false;
+      } else if (name === 'perforation' && checked) {
+        newOptions.acrylic = false;
       }
-    }));
+      return {
+        ...prev,
+        options: newOptions
+      };
+    });
   };
 
   const handleStepperChange = (name, value) => {
@@ -255,6 +363,28 @@ function App({ user, onLogout }) {
 
   const handleColumnSelect = (colIndex) => {
     setFormData(prev => ({ ...prev, controlPanelColumn: colIndex }));
+  };
+
+  // 열별 단수 변경
+  const handleColumnTiersChange = (colIdx, newTiers) => {
+    setFormData(prev => {
+      const newConfigs = [...(prev.columnConfigs || [])];
+      newConfigs[colIdx] = {
+        ...newConfigs[colIdx],
+        tiers: newTiers,
+        tierConfig: newConfigs[colIdx].tierConfig || { type: 'uniform', ratios: null }
+      };
+      return { ...prev, columnConfigs: newConfigs };
+    });
+  };
+
+  // 프레임 상단 텍스트 계산 헬퍼 함수
+  const getFrameText = () => {
+    const presets = { storage: '물품보관함', unmanned: '무인물품보관함', refrigerator: '냉장보관함', prohibited: '반입금지물품보관함' };
+    if (formData.options.frameTextPreset === 'custom') {
+      return formData.options.frameTextCustom.trim() || '물품보관함';
+    }
+    return presets[formData.options.frameTextPreset] || '물품보관함';
   };
 
   const handleSubmit = async (e) => {
@@ -302,17 +432,42 @@ function App({ user, onLogout }) {
           tiers: formData.tiers,
           controlPanelColumn: formData.controlPanelColumn,
           controlPanelTiers: formData.controlPanelTiers,
+          controllerType: formData.options.controllerType,
           frameType: formData.options.frameType,
+          frameText: getFrameText(),
           lockerColor: formData.options.lockerColor,
           customColor: formData.options.customColor,
           handle: formData.options.handle,
-          tierConfig: formData.tierConfig
+          perforation: formData.options.perforation,
+          acrylic: formData.options.acrylic,
+          tierConfig: formData.tierConfig,
+          dualController: formData.options.dualController,
+          columnConfigs: formData.columnConfigs
         })
       });
 
       if (imgRes.ok) {
         const imgData = await imgRes.json();
         setPreviewImage(`data:image/png;base64,${imgData.image}`);
+        // 이미지 생성 시점의 설정 저장 (기본 구성과 독립적으로 관리)
+        // columnConfigs는 항상 생성하여 각 열의 상태를 독립적으로 관리
+        const initialColumnConfigs = formData.columnConfigs
+          ? deepCopyColumnConfigs(formData.columnConfigs)
+          : Array.from({ length: formData.columns }, () => ({
+              tiers: formData.tiers,
+              tierConfig: formData.tierConfig
+                ? { ...formData.tierConfig, ratios: formData.tierConfig.ratios ? [...formData.tierConfig.ratios] : null }
+                : { type: 'uniform', ratios: null }
+            }));
+        setPreviewConfig({
+          columns: formData.columns,
+          tiers: formData.tiers,
+          tierConfig: formData.tierConfig, // 기본 tierConfig도 저장 (fallback용)
+          columnConfigs: initialColumnConfigs,
+          controlPanelColumn: formData.controlPanelColumn,
+          controlPanelTiers: formData.controlPanelTiers,
+          controllerType: formData.options.controllerType
+        });
 
         // Scroll to results section
         if (resultSectionRef.current) {
@@ -345,9 +500,12 @@ function App({ user, onLogout }) {
         dualController: false,
         acrylic: false,
         frameType: 'none',
+        frameTextPreset: 'storage',
+        frameTextCustom: '',
         lockerColor: 'white',
         customColor: '#808080',
         handle: false,
+        controllerType: 'standard',
         ...inquiry.options
       },
       region: inquiry.region,
@@ -473,6 +631,12 @@ function App({ user, onLogout }) {
       // handleSubmit에서 업데이트된 state가 아직 반영되지 않았을 경우를 대비하여 명시적으로 확인
       const finalInstallationBackground = currentFormData.detailedLocation || currentFormData.installationBackground;
 
+      // 프레임 텍스트 계산 (currentFormData 기반)
+      const presets = { storage: '물품보관함', unmanned: '무인물품보관함', refrigerator: '냉장보관함', prohibited: '반입금지물품보관함' };
+      const currentFrameText = currentFormData.options.frameTextPreset === 'custom'
+        ? (currentFormData.options.frameTextCustom?.trim() || '물품보관함')
+        : (presets[currentFormData.options.frameTextPreset] || '물품보관함');
+
       const res = await fetch(`${API_3D_URL}/generate-3d-installation`, {
         method: 'POST',
         headers: getHeadersWithUser(user),
@@ -480,9 +644,14 @@ function App({ user, onLogout }) {
           image: base64Data,
           mimeType: 'image/png',
           frameType: currentFormData.options.frameType,
+          frameText: currentFrameText,
           columns: currentFormData.columns,
           tiers: currentFormData.tiers,
-          installationBackground: finalInstallationBackground
+          installationBackground: finalInstallationBackground,
+          // 배리어프리 관련 정보 추가
+          controlPanelType: currentFormData.options.controlPanelType || 'standard',
+          controlPanelColumn: currentFormData.controlPanelColumn || 0,
+          columnConfigs: currentFormData.columnConfigs || null
         })
       });
 
@@ -773,10 +942,12 @@ function App({ user, onLogout }) {
           <div className="title-row">
             <Loader />
             <div className="title-text">
-              <div className="subtitle-en">Locker Quotation Generating Agent</div>
-              <h1>보관함 견적 생성 에이전트</h1>
+              <div className="subtitle-en">World Locker Quotation Agent</div>
+              <h1>보관함 견적 에이전트</h1>
             </div>
           </div>
+        </div>
+        <div className="header-right">
           <div className="tab-buttons">
             <button
               className={`tab-btn ${activeTab === 'config' ? 'active' : ''}`}
@@ -791,8 +962,28 @@ function App({ user, onLogout }) {
               문의내역
             </button>
           </div>
-        </div>
-        <div className="header-right">
+          <button
+            className="new-consultation-btn"
+            onClick={async () => {
+              setIsConsultationModalOpen(true);
+              try {
+                await fetch(`${API_URL}/activity-log`, {
+                  method: 'POST',
+                  headers: getHeadersWithUser(user),
+                  body: JSON.stringify({ action: '새 상담 모달 열기', logType: 'info' })
+                });
+              } catch (e) {
+                console.warn('Activity log failed:', e);
+              }
+            }}
+            title="새 상담 시작"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+            </svg>
+            새 상담
+          </button>
           {user && (
             <button
               onClick={onLogout}
@@ -831,6 +1022,7 @@ function App({ user, onLogout }) {
             <form onSubmit={handleSubmit}>
               <div className="form-section-title">함 구성</div>
               <div className="config-row-inline">
+                <span className="config-label">기본 구성</span>
                 <NumberStepper
                   name="columns"
                   value={formData.columns}
@@ -873,30 +1065,53 @@ function App({ user, onLogout }) {
                   </button>
                 </div>
                 <span className="config-divider"></span>
-                <span className="config-label">제어부 위치</span>
-                <div className="cp-selector-container">
-                  {renderColumnSelector()}
+                <span className="config-label">제어부</span>
+                <div className="toggle-tabs compact">
+                  <button
+                    type="button"
+                    className={`toggle-tab ${formData.options.controllerType === 'standard' ? 'active' : ''}`}
+                    onClick={() => setFormData(prev => ({ ...prev, options: { ...prev.options, controllerType: 'standard' } }))}
+                  >
+                    일반
+                  </button>
+                  <button
+                    type="button"
+                    className={`toggle-tab ${formData.options.controllerType === 'qr' ? 'active' : ''}`}
+                    onClick={() => setFormData(prev => ({ ...prev, options: { ...prev.options, controllerType: 'qr' } }))}
+                  >
+                    QR
+                  </button>
+                  <button
+                    type="button"
+                    className={`toggle-tab ${formData.options.controllerType === 'barrier-free' ? 'active' : ''}`}
+                    onClick={() => setFormData(prev => ({ ...prev, options: { ...prev.options, controllerType: 'barrier-free', dualController: true } }))}
+                  >
+                    배리어프리
+                  </button>
                 </div>
-                <span className="config-gap"></span>
-                <span className="config-label">제어부 단수</span>
-                <NumberStepper
-                  name="controlPanelTiers"
-                  value={formData.controlPanelTiers}
-                  onChange={handleStepperChange}
-                  min={1}
-                  max={Math.max(1, formData.tiers - 2)}
-                  suffix="단"
-                />
-                <span className="config-divider"></span>
-                <span className="config-label">세트 수</span>
-                <NumberStepper
-                  name="quantity"
-                  value={formData.quantity}
-                  onChange={handleStepperChange}
-                  min={1}
-                  suffix="세트"
-                  className="stepper-narrow"
-                />
+                {formData.options.controllerType !== 'qr' && (
+                  <>
+                    <span className="config-gap"></span>
+                    <span className="config-label">위치</span>
+                    <div className="cp-selector-container">
+                      {renderColumnSelector()}
+                    </div>
+                    {formData.options.controllerType !== 'barrier-free' && (
+                      <>
+                        <span className="config-gap"></span>
+                        <span className="config-label">단 수</span>
+                        <NumberStepper
+                          name="controlPanelTiers"
+                          value={formData.controlPanelTiers}
+                          onChange={handleStepperChange}
+                          min={1}
+                          max={Math.max(1, formData.tiers - 2)}
+                          suffix="단"
+                        />
+                      </>
+                    )}
+                  </>
+                )}
               </div>
 
               {/* 커스텀 높이 설정 (비균등 선택시만 표시) */}
@@ -939,8 +1154,22 @@ function App({ user, onLogout }) {
                 </div>
               )}
 
-              {/* 옵션 행: 프레임, 색상, 기타옵션 */}
+
+              {/* 옵션 행: 세트 수, 프레임, 색상, 기타옵션 */}
               <div className="options-row">
+                {/* 세트 수 */}
+                <div className="option-group">
+                  <label>세트 수</label>
+                  <NumberStepper
+                    name="quantity"
+                    value={formData.quantity}
+                    onChange={handleStepperChange}
+                    min={1}
+                    suffix="세트"
+                    className="stepper-narrow"
+                  />
+                </div>
+
                 {/* 프레임 옵션 */}
                 <div className="option-group">
                   <label>프레임</label>
@@ -1018,13 +1247,62 @@ function App({ user, onLogout }) {
                       <input type="checkbox" name="dualController" checked={formData.options.dualController} onChange={handleOptionChange} />
                       <span>듀얼컨트롤러</span>
                     </label>
-                    <label className="chip-checkbox">
-                      <input type="checkbox" name="acrylic" checked={formData.options.acrylic} onChange={handleOptionChange} />
+                    <label className={`chip-checkbox${formData.options.acrylic ? ' disabled' : ''}`}>
+                      <input type="checkbox" name="perforation" checked={formData.options.perforation} onChange={handleOptionChange} disabled={formData.options.acrylic} />
+                      <span>타공디자인</span>
+                    </label>
+                    <label className={`chip-checkbox${formData.options.perforation ? ' disabled' : ''}`}>
+                      <input type="checkbox" name="acrylic" checked={formData.options.acrylic} onChange={handleOptionChange} disabled={formData.options.perforation} />
                       <span>아크릴도어</span>
                     </label>
                   </div>
                 </div>
               </div>
+
+              {/* 프레임 문구 (상부 프레임이 있을 때만 표시) - 프레임 버튼 아래 정렬 */}
+              {['fullSet', 'topOnly', 'topAndSide'].includes(formData.options.frameType) && (
+                <div
+                  className="frame-text-row-wrapper"
+                  style={{
+                    marginLeft: formData.options.frameType === 'fullSet' ? '227px'
+                              : formData.options.frameType === 'topOnly' ? '287px'
+                              : '95px'
+                  }}
+                >
+                  <div className="frame-text-inline">
+                    <span className="frame-text-label">프레임 문구</span>
+                    <div className="toggle-tabs">
+                      {[
+                        { id: 'storage', label: '물품보관함' },
+                        { id: 'unmanned', label: '무인물품보관함' },
+                        { id: 'refrigerator', label: '냉장보관함' },
+                        { id: 'prohibited', label: '반입금지물품보관함' },
+                        { id: 'custom', label: '직접입력' }
+                      ].map(preset => (
+                        <button
+                          key={preset.id}
+                          type="button"
+                          className={`toggle-tab ${formData.options.frameTextPreset === preset.id ? 'active' : ''}`}
+                          onClick={() => setFormData(prev => ({ ...prev, options: { ...prev.options, frameTextPreset: preset.id } }))}
+                        >
+                          {preset.label}
+                        </button>
+                      ))}
+                    </div>
+                    {formData.options.frameTextPreset === 'custom' && (
+                      <input
+                        type="text"
+                        className="frame-text-input"
+                        placeholder="텍스트 입력 (최대 20자)"
+                        maxLength={20}
+                        value={formData.options.frameTextCustom}
+                        onChange={(e) => setFormData(prev => ({ ...prev, options: { ...prev.options, frameTextCustom: e.target.value } }))}
+                        style={{ width: '330px' }}
+                      />
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* 고객 정보 행 */}
               <div className="form-section-title">고객 정보</div>
@@ -1125,7 +1403,297 @@ function App({ user, onLogout }) {
               {/* Image Display */}
               {viewMode === '2d' || !generatedImage ? (
                 previewImage ? (
-                  <img key="2d-preview" src={previewImage} alt="Locker 2D Preview" className="preview-image" />
+                  <div className="preview-with-controls">
+                    {/* 열별 단수 조절 버튼 (이미지 위) - previewConfig 기준으로 렌더링 */}
+                    {previewConfig && (
+                      <div className="column-tier-controls">
+                        {Array.from({ length: previewConfig.columns }, (_, idx) => {
+                          const colNum = idx + 1;
+                          const isControlPanel = previewConfig.controllerType !== 'qr' && colNum === previewConfig.controlPanelColumn;
+                          const currentTiers = previewConfig.columnConfigs?.[idx]?.tiers ?? previewConfig.tiers;
+                          const isDisabled = isControlPanel && previewConfig.controllerType === 'barrier-free';
+
+                          const currentTierConfig = previewConfig.columnConfigs?.[idx]?.tierConfig || { type: 'uniform', ratios: null };
+                          const isNonUniform = currentTierConfig.type === 'custom';
+
+                          return (
+                            <div key={idx} className={`col-tier-control ${isControlPanel ? 'is-control-panel' : ''}`}>
+                              <div className="tier-stepper">
+                                <button
+                                  type="button"
+                                  className="tier-stepper-btn decrement"
+                                  onClick={() => {
+                                    // previewConfig 업데이트 후 이미지 갱신
+                                    const newConfig = { ...previewConfig };
+                                    if (isControlPanel) {
+                                      newConfig.controlPanelTiers = Math.max(1, previewConfig.controlPanelTiers - 1);
+                                    } else {
+                                      // columnConfigs가 없으면 기존 tierConfig 기반으로 생성 (거의 발생하지 않음)
+                                      if (!newConfig.columnConfigs) {
+                                        const baseTierConfig = previewConfig.tierConfig || { type: 'uniform', ratios: null };
+                                        newConfig.columnConfigs = Array.from({ length: previewConfig.columns }, () => ({
+                                          tiers: previewConfig.tiers,
+                                          tierConfig: { ...baseTierConfig, ratios: baseTierConfig.ratios ? [...baseTierConfig.ratios] : null }
+                                        }));
+                                      } else {
+                                        newConfig.columnConfigs = deepCopyColumnConfigs(newConfig.columnConfigs);
+                                      }
+                                      const newTiers = Math.max(1, currentTiers - 1);
+                                      // 비균등 비율 배열도 조정
+                                      const existingRatios = newConfig.columnConfigs[idx]?.tierConfig?.ratios;
+                                      let newRatios = null;
+                                      if (existingRatios && existingRatios.length > newTiers) {
+                                        newRatios = existingRatios.slice(0, newTiers);
+                                      } else if (existingRatios) {
+                                        newRatios = existingRatios;
+                                      }
+                                      newConfig.columnConfigs[idx] = {
+                                        ...newConfig.columnConfigs[idx],
+                                        tiers: newTiers,
+                                        tierConfig: newRatios ? { type: 'custom', ratios: newRatios } : { type: 'uniform', ratios: null }
+                                      };
+                                    }
+                                    refreshPreviewImage(newConfig);
+                                  }}
+                                  disabled={isDisabled}
+                                  aria-label="감소"
+                                >
+                                  <svg width="10" height="2" viewBox="0 0 10 2" fill="none">
+                                    <path d="M1 1h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                                  </svg>
+                                </button>
+                                <span
+                                  className={`tier-stepper-value ${!isControlPanel ? 'clickable' : ''} ${isNonUniform ? 'non-uniform' : ''}`}
+                                  onClick={() => {
+                                    if (!isControlPanel) {
+                                      setOpenPopoverCol(openPopoverCol === idx ? null : idx);
+                                    }
+                                  }}
+                                  title={!isControlPanel ? '클릭하여 높이 설정' : undefined}
+                                >
+                                  {isControlPanel ? previewConfig.controlPanelTiers : currentTiers}
+                                  {isNonUniform && <span className="non-uniform-indicator">*</span>}
+                                </span>
+                                <button
+                                  type="button"
+                                  className="tier-stepper-btn increment"
+                                  onClick={() => {
+                                    // previewConfig 업데이트 후 이미지 갱신
+                                    const newConfig = { ...previewConfig };
+                                    if (isControlPanel) {
+                                      newConfig.controlPanelTiers = Math.min(10, previewConfig.controlPanelTiers + 1);
+                                    } else {
+                                      // columnConfigs가 없으면 기존 tierConfig 기반으로 생성 (거의 발생하지 않음)
+                                      if (!newConfig.columnConfigs) {
+                                        const baseTierConfig = previewConfig.tierConfig || { type: 'uniform', ratios: null };
+                                        newConfig.columnConfigs = Array.from({ length: previewConfig.columns }, () => ({
+                                          tiers: previewConfig.tiers,
+                                          tierConfig: { ...baseTierConfig, ratios: baseTierConfig.ratios ? [...baseTierConfig.ratios] : null }
+                                        }));
+                                      } else {
+                                        newConfig.columnConfigs = deepCopyColumnConfigs(newConfig.columnConfigs);
+                                      }
+                                      const newTiers = Math.min(10, currentTiers + 1);
+                                      // 비균등 비율 배열도 조정
+                                      const existingRatios = newConfig.columnConfigs[idx]?.tierConfig?.ratios;
+                                      let newRatios = null;
+                                      if (existingRatios) {
+                                        newRatios = [...existingRatios, 1]; // 새 단 추가 시 기본 비율 1
+                                      }
+                                      newConfig.columnConfigs[idx] = {
+                                        ...newConfig.columnConfigs[idx],
+                                        tiers: newTiers,
+                                        tierConfig: newRatios ? { type: 'custom', ratios: newRatios } : { type: 'uniform', ratios: null }
+                                      };
+                                    }
+                                    refreshPreviewImage(newConfig);
+                                  }}
+                                  disabled={isDisabled}
+                                  aria-label="증가"
+                                >
+                                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                                    <path d="M5 1v8M1 5h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                                  </svg>
+                                </button>
+                              </div>
+
+                              {/* 열별 높이 설정 팝오버 */}
+                              {!isControlPanel && openPopoverCol === idx && (
+                                <div className="tier-config-popover">
+                                  <div className="popover-header">
+                                    <span className="popover-title">{colNum}열 높이 설정</span>
+                                    <button
+                                      type="button"
+                                      className="popover-close"
+                                      onClick={() => setOpenPopoverCol(null)}
+                                    >
+                                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                        <path d="M10.5 3.5L3.5 10.5M3.5 3.5L10.5 10.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                                      </svg>
+                                    </button>
+                                  </div>
+
+                                  <div className="popover-toggle-group">
+                                    <button
+                                      type="button"
+                                      className={`popover-toggle-btn ${currentTierConfig.type === 'uniform' ? 'active' : ''}`}
+                                      onClick={() => {
+                                        const newConfig = { ...previewConfig };
+                                        // columnConfigs가 없으면 기존 tierConfig 기반으로 생성 (거의 발생하지 않음)
+                                        if (!newConfig.columnConfigs) {
+                                          const baseTierConfig = previewConfig.tierConfig || { type: 'uniform', ratios: null };
+                                          newConfig.columnConfigs = Array.from({ length: previewConfig.columns }, () => ({
+                                            tiers: previewConfig.tiers,
+                                            tierConfig: { ...baseTierConfig, ratios: baseTierConfig.ratios ? [...baseTierConfig.ratios] : null }
+                                          }));
+                                        } else {
+                                          newConfig.columnConfigs = deepCopyColumnConfigs(newConfig.columnConfigs);
+                                        }
+                                        newConfig.columnConfigs[idx] = {
+                                          ...newConfig.columnConfigs[idx],
+                                          tierConfig: { type: 'uniform', ratios: null }
+                                        };
+                                        refreshPreviewImage(newConfig);
+                                      }}
+                                    >
+                                      균등
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className={`popover-toggle-btn ${currentTierConfig.type === 'custom' ? 'active' : ''}`}
+                                      onClick={() => {
+                                        const newConfig = { ...previewConfig };
+                                        // columnConfigs가 없으면 기존 tierConfig 기반으로 생성 (거의 발생하지 않음)
+                                        if (!newConfig.columnConfigs) {
+                                          const baseTierConfig = previewConfig.tierConfig || { type: 'uniform', ratios: null };
+                                          newConfig.columnConfigs = Array.from({ length: previewConfig.columns }, () => ({
+                                            tiers: previewConfig.tiers,
+                                            tierConfig: { ...baseTierConfig, ratios: baseTierConfig.ratios ? [...baseTierConfig.ratios] : null }
+                                          }));
+                                        } else {
+                                          newConfig.columnConfigs = deepCopyColumnConfigs(newConfig.columnConfigs);
+                                        }
+                                        newConfig.columnConfigs[idx] = {
+                                          ...newConfig.columnConfigs[idx],
+                                          tierConfig: { type: 'custom', ratios: new Array(currentTiers).fill(1) }
+                                        };
+                                        refreshPreviewImage(newConfig);
+                                      }}
+                                    >
+                                      비균등
+                                    </button>
+                                  </div>
+
+                                  {/* 복사/붙여넣기 버튼 */}
+                                  <div className="popover-copy-paste-group">
+                                    <button
+                                      type="button"
+                                      className="popover-copy-btn"
+                                      onClick={() => {
+                                        setCopiedTierConfig({
+                                          tiers: currentTiers,
+                                          tierConfig: { ...currentTierConfig, ratios: currentTierConfig.ratios ? [...currentTierConfig.ratios] : null }
+                                        });
+                                      }}
+                                    >
+                                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                                      </svg>
+                                      복사
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className={`popover-paste-btn ${!copiedTierConfig ? 'disabled' : ''}`}
+                                      disabled={!copiedTierConfig}
+                                      onClick={() => {
+                                        if (!copiedTierConfig) return;
+
+                                        const newConfig = { ...previewConfig };
+                                        newConfig.columnConfigs = deepCopyColumnConfigs(newConfig.columnConfigs) || [];
+
+                                        // 단 수와 tierConfig 모두 복사된 값으로 적용
+                                        const copiedTiers = copiedTierConfig.tiers;
+                                        const copiedTierConfigData = {
+                                          ...copiedTierConfig.tierConfig,
+                                          ratios: copiedTierConfig.tierConfig.ratios ? [...copiedTierConfig.tierConfig.ratios] : null
+                                        };
+
+                                        newConfig.columnConfigs[idx] = {
+                                          ...newConfig.columnConfigs[idx],
+                                          tiers: copiedTiers,
+                                          tierConfig: copiedTierConfigData
+                                        };
+
+                                        // 팝오버 닫기 (단 수가 바뀌면 팝오버 내용도 달라지므로)
+                                        setOpenPopoverCol(null);
+                                        refreshPreviewImage(newConfig);
+                                      }}
+                                    >
+                                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+                                        <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+                                      </svg>
+                                      붙여넣기
+                                      {copiedTierConfig && ` (${copiedTierConfig.tiers}단)`}
+                                    </button>
+                                  </div>
+
+                                  {currentTierConfig.type === 'custom' && (
+                                    <div className="popover-sliders">
+                                      {Array.from({ length: currentTiers }, (_, tierIdx) => {
+                                        const ratio = currentTierConfig.ratios?.[tierIdx] || 1;
+                                        const totalRatio = (currentTierConfig.ratios || []).reduce((sum, r) => sum + (r || 1), 0) || currentTiers;
+                                        const percentage = Math.round((ratio / totalRatio) * 100);
+
+                                        // 슬라이더 값 업데이트 (로컬 상태만, 이미지 갱신 X)
+                                        const updateRatioLocally = (newRatio) => {
+                                          const newConfig = { ...previewConfig };
+                                          newConfig.columnConfigs = deepCopyColumnConfigs(newConfig.columnConfigs) || [];
+                                          const newRatios = [...(currentTierConfig.ratios || new Array(currentTiers).fill(1))];
+                                          newRatios[tierIdx] = newRatio;
+                                          newConfig.columnConfigs[idx] = {
+                                            ...newConfig.columnConfigs[idx],
+                                            tierConfig: { type: 'custom', ratios: newRatios }
+                                          };
+                                          setPreviewConfig(newConfig);
+                                        };
+
+                                        // 드래그 종료 시 이미지 갱신
+                                        const commitRatioChange = () => {
+                                          refreshPreviewImage(previewConfig);
+                                        };
+
+                                        return (
+                                          <div key={tierIdx} className="popover-slider-row">
+                                            <span className="tier-label">{tierIdx + 1}단</span>
+                                            <input
+                                              type="range"
+                                              min="0.5"
+                                              max="2"
+                                              step="0.1"
+                                              value={ratio}
+                                              onChange={(e) => updateRatioLocally(parseFloat(e.target.value))}
+                                              onMouseUp={commitRatioChange}
+                                              onTouchEnd={commitRatioChange}
+                                              className="ratio-slider"
+                                            />
+                                            <span className="ratio-value">{ratio.toFixed(1)}x</span>
+                                            <span className="ratio-percent">({percentage}%)</span>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                    <img key="2d-preview" src={previewImage} alt="Locker 2D Preview" className="preview-image" />
+                  </div>
                 ) : (
                   <div className="empty-preview">
                     <span>견적 생성 버튼을 눌러주세요</span>
@@ -1375,7 +1943,17 @@ function App({ user, onLogout }) {
             )}
         </div>
       ) : (
-        <DataSection inquiries={inquiries} onApplyInquiry={handleApplyInquiry} />
+        <DataSection
+          inquiries={inquiries}
+          onApplyInquiry={handleApplyInquiry}
+          onSaveInquiry={(updatedInquiry) => {
+            setInquiries(prev => prev.map(inq =>
+              inq.id === updatedInquiry.id ? updatedInquiry : inq
+            ));
+          }}
+          apiUrl={API_URL}
+          getHeaders={() => getHeadersWithUser(user)}
+        />
       )}
 
       {/* 워크플로우 진행 상태 모달 */}
@@ -1397,6 +1975,40 @@ function App({ user, onLogout }) {
             setWorkflowComplete(false);
           }
         }}
+      />
+
+      {/* 상담 노트 모달 */}
+      <ConsultationNoteModal
+        isOpen={isConsultationModalOpen}
+        onClose={() => setIsConsultationModalOpen(false)}
+        onSave={(parsedFormData, extractedData) => {
+          // 파싱된 데이터를 formData에 적용
+          setFormData(prev => ({
+            ...prev,
+            columns: parsedFormData.columns || prev.columns,
+            tiers: parsedFormData.tiers || prev.tiers,
+            options: {
+              ...prev.options,
+              lockerColor: parsedFormData.options?.lockerColor || prev.options.lockerColor,
+              frameType: parsedFormData.options?.frameType || prev.options.frameType,
+              handle: parsedFormData.options?.handle ?? prev.options.handle,
+              acrylic: parsedFormData.options?.acrylic ?? prev.options.acrylic,
+              dualController: parsedFormData.options?.dualController ?? prev.options.dualController,
+              perforation: parsedFormData.options?.perforation ?? prev.options.perforation,
+              controllerType: parsedFormData.options?.controllerType || prev.options.controllerType
+            },
+            region: parsedFormData.region || prev.region,
+            companyName: parsedFormData.companyName || prev.companyName,
+            contact: parsedFormData.contact || prev.contact,
+            email: parsedFormData.email || prev.email
+          }));
+          // 문의내역 새로고침
+          fetchInquiries();
+          // 문의 내역 탭으로 전환
+          setActiveTab('data');
+        }}
+        apiUrl={API_URL}
+        getHeaders={() => getHeadersWithUser(user)}
       />
     </div>
   );

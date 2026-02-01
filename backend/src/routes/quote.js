@@ -4,9 +4,10 @@ import { generateQuotePDF, generateQuotePDFBase64 } from '../services/pdfService
 import { generateQuoteExcel, generateQuoteExcelBase64 } from '../services/excelService.js';
 import { generateLockerGridBase64 } from '../services/imageService.js';
 import { generate3DInstallation } from '../services/geminiService.js';
-import { saveInquiry, getAllInquiries } from '../services/inquiryService.js';
+import { saveInquiry, getAllInquiries, updateInquiry, deleteInquiry } from '../services/inquiryService.js';
 import { trackApiCall, sendActivityLog, getStatsForDashboard, toggleAgentStatus, setAgentStatus } from '../services/statsService.js';
 import { verifyConnection } from '../services/geminiService.js';
+import { parseConsultationNote, convertToFormData } from '../services/consultationService.js';
 
 const router = Router();
 
@@ -71,6 +72,25 @@ function validateInput(body) {
         }
     }
 
+    // Validate columnConfigs if provided
+    const { columnConfigs } = body;
+    if (columnConfigs) {
+        if (!Array.isArray(columnConfigs)) {
+            errors.push('columnConfigs must be an array');
+        } else if (columnConfigs.length !== columns) {
+            errors.push(`columnConfigs length (${columnConfigs.length}) must match columns (${columns})`);
+        } else {
+            columnConfigs.forEach((cfg, idx) => {
+                if (cfg.tiers && (typeof cfg.tiers !== 'number' || cfg.tiers < 1 || cfg.tiers > 10)) {
+                    errors.push(`columnConfigs[${idx}].tiers must be a number between 1 and 10`);
+                }
+                if (cfg.tierConfig && cfg.tierConfig.type && !VALID_TIER_CONFIG_TYPES.includes(cfg.tierConfig.type)) {
+                    errors.push(`columnConfigs[${idx}].tierConfig.type must be one of: ${VALID_TIER_CONFIG_TYPES.join(', ')}`);
+                }
+            });
+        }
+    }
+
     return errors;
 }
 
@@ -91,6 +111,8 @@ router.post('/calculate', async (req, res) => {
             tiers,
             quantity,
             controlPanelTiers,
+            controlPanelColumn,
+            columnConfigs,
             options,
             region,
             customerName,
@@ -102,6 +124,8 @@ router.post('/calculate', async (req, res) => {
             tiers,
             quantity,
             controlPanelTiers: controlPanelTiers || 4,
+            controlPanelColumn: controlPanelColumn || 1,
+            columnConfigs: columnConfigs || null,
             options: options || {},
             region: region || 'seoul'
         });
@@ -144,6 +168,118 @@ router.get('/inquiries', async (req, res) => {
         res.json(inquiries);
     } catch (err) {
         res.status(500).json({ error: err.message });
+    }
+});
+
+/**
+ * POST /api/quote/inquiries
+ * Save a new inquiry from consultation note
+ */
+router.post('/inquiries', async (req, res) => {
+    try {
+        const userName = req.userName || null;
+        const inquiryData = req.body;
+
+        // 가격 계산 추가 (columns, tiers가 있는 경우)
+        let summary = null;
+        if (inquiryData.columns && inquiryData.tiers) {
+            try {
+                const quote = calculateQuote({
+                    columns: inquiryData.columns,
+                    tiers: inquiryData.tiers,
+                    quantity: inquiryData.quantity || 1,
+                    controlPanelTiers: inquiryData.controlPanelTiers || 3,
+                    options: inquiryData.options || {},
+                    region: inquiryData.region || 'seoul'
+                });
+                summary = quote.summary;
+            } catch (calcErr) {
+                console.error('Price calculation error:', calcErr);
+            }
+        }
+
+        const savedInquiry = await saveInquiry({
+            ...inquiryData,
+            summary,
+            createdBy: userName
+        });
+
+        console.log(`📋 Inquiry saved - ID: ${savedInquiry.id}, company: ${inquiryData.companyName || '(미입력)'}`);
+
+        // 활동 로그 전송
+        sendActivityLog(
+            `새 문의 저장: ${inquiryData.companyName || '(미입력)'} - ${inquiryData.columns || '?'}열×${inquiryData.tiers || '?'}단`,
+            'success',
+            0,
+            userName
+        );
+
+        res.json({
+            success: true,
+            inquiry: savedInquiry
+        });
+    } catch (err) {
+        console.error('Save inquiry error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+/**
+ * PUT /api/quote/inquiries/:id
+ * Update an existing inquiry
+ */
+router.put('/inquiries/:id', async (req, res) => {
+    try {
+        const id = parseInt(req.params.id, 10);
+        const updateData = req.body;
+
+        // 가격 재계산 (columns, tiers가 있는 경우)
+        if (updateData.columns && updateData.tiers) {
+            try {
+                const quote = calculateQuote({
+                    columns: updateData.columns,
+                    tiers: updateData.tiers,
+                    quantity: updateData.quantity || 1,
+                    controlPanelTiers: updateData.controlPanelTiers || 3,
+                    options: updateData.options || {},
+                    region: updateData.region || 'seoul'
+                });
+                updateData.summary = quote.summary;
+            } catch (calcErr) {
+                console.error('Price calculation error:', calcErr);
+            }
+        }
+
+        const updated = await updateInquiry(id, updateData);
+        console.log(`📝 Inquiry updated - ID: ${id}`);
+
+        res.json({
+            success: true,
+            inquiry: updated
+        });
+    } catch (err) {
+        console.error('Update inquiry error:', err);
+        res.status(err.message === 'Inquiry not found' ? 404 : 500).json({ error: err.message });
+    }
+});
+
+/**
+ * DELETE /api/quote/inquiries/:id
+ * Delete an inquiry
+ */
+router.delete('/inquiries/:id', async (req, res) => {
+    try {
+        const id = parseInt(req.params.id, 10);
+        const deleted = await deleteInquiry(id);
+        console.log(`🗑️ Inquiry deleted - ID: ${id}`);
+
+        res.json({
+            success: true,
+            deleted
+        });
+    } catch (err) {
+        console.error('Delete inquiry error:', err);
+        res.status(err.message === 'Inquiry not found' ? 404 : 500).json({ error: err.message });
     }
 });
 
@@ -227,6 +363,7 @@ router.post('/excel', async (req, res) => {
             quantity,
             controlPanelTiers,
             controlPanelColumn,
+            columnConfigs,
             options,
             region,
             companyName,
@@ -242,6 +379,8 @@ router.post('/excel', async (req, res) => {
             tiers,
             quantity,
             controlPanelTiers: controlPanelTiers || 4,
+            controlPanelColumn: controlPanelColumn || 1,
+            columnConfigs: columnConfigs || null,
             options: options || {},
             region: region || 'seoul'
         });
@@ -296,7 +435,7 @@ router.post('/excel', async (req, res) => {
 router.post('/preview-image', async (req, res) => {
     const startTime = Date.now();
     try {
-        const { columns, tiers, controlPanelColumn, controlPanelTiers, frameType, lockerColor, customColor, handle, tierConfig } = req.body;
+        const { columns, tiers, controlPanelColumn, controlPanelTiers, controllerType, frameType, frameText, lockerColor, customColor, handle, perforation, acrylic, tierConfig, dualController, columnConfigs } = req.body;
 
         if (!columns || columns < 1 || columns > 20) {
             return res.status(400).json({ error: 'columns must be between 1 and 20' });
@@ -317,14 +456,25 @@ router.post('/preview-image', async (req, res) => {
             }
         }
 
+        // Validate columnConfigs if provided
+        if (columnConfigs && Array.isArray(columnConfigs) && columnConfigs.length !== columns) {
+            return res.status(400).json({ error: 'columnConfigs length must match columns' });
+        }
+
         const base64 = await generateLockerGridBase64(columns, tiers, {
             controlPanelColumn: controlPanelColumn || 0,
             controlPanelTiers: controlPanelTiers || 4,
+            controllerType: controllerType || 'standard',
             frameType: frameType || 'none',
+            frameText: frameText || '물품보관함',
             lockerColor: lockerColor || 'black',
             customColor: customColor || '#808080',
             handle: handle || false,
-            tierConfig: tierConfig || { type: 'uniform' }
+            perforation: perforation || false,
+            acrylic: acrylic || false,
+            tierConfig: tierConfig || { type: 'uniform' },
+            dualController: dualController || false,
+            columnConfigs: columnConfigs || null
         });
 
         // Create detailed log
@@ -348,15 +498,25 @@ router.post('/preview-image', async (req, res) => {
 /**
  * POST /api/quote/generate-3d-installation
  * Generate 3D installation visualization from locker preview image
- * Body: { image: base64String, mimeType: 'image/png' }
+ * Body: { image: base64String, mimeType: 'image/png', columns: number (1-20), tiers: number (1-10) }
  */
 router.post('/generate-3d-installation', async (req, res) => {
     const startTime = Date.now();
     try {
-        const { image, mimeType, frameType, columns, tiers, installationBackground } = req.body;
+        const {
+            image, mimeType, frameType, frameText, columns, tiers, installationBackground,
+            // 배리어프리 관련 정보
+            controlPanelType, controlPanelColumn, columnConfigs
+        } = req.body;
 
         if (!image) {
             return res.status(400).json({ error: 'Image data is required' });
+        }
+        if (!columns || columns < 1 || columns > 20) {
+            return res.status(400).json({ error: 'columns must be between 1 and 20' });
+        }
+        if (!tiers || tiers < 1 || tiers > 10) {
+            return res.status(400).json({ error: 'tiers must be between 1 and 10' });
         }
 
         const userName = req.userName || null;
@@ -391,7 +551,19 @@ router.post('/generate-3d-installation', async (req, res) => {
         sendActivityLog('Calling Gemini API...', 'info', 0, userName);
 
         // Generate 3D visualization using Gemini API
-        const generated3DImage = await generate3DInstallation(image, mimeType || 'image/png', frameType || 'none', columns, tiers, installationBackground);
+        const generated3DImage = await generate3DInstallation(
+            image,
+            mimeType || 'image/png',
+            frameType || 'none',
+            columns,
+            tiers,
+            installationBackground,
+            frameText || '물품보관함',
+            // 배리어프리 관련 정보
+            controlPanelType || 'standard',
+            controlPanelColumn || 0,
+            columnConfigs || null
+        );
 
         const responseTime = Date.now() - startTime;
 
@@ -473,6 +645,28 @@ router.post('/agent-status', async (req, res) => {
 });
 
 /**
+ * POST /api/quote/activity-log
+ * Send a general activity log to Dashboard Brain
+ * Body: { action: string, logType?: 'info' | 'success' | 'error' }
+ */
+router.post('/activity-log', async (req, res) => {
+    try {
+        const { action, logType = 'info' } = req.body;
+        const userName = req.userName || null;
+
+        if (!action) {
+            return res.status(400).json({ error: 'action is required' });
+        }
+
+        await sendActivityLog(action, logType, 0, userName);
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Activity log error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+/**
  * GET /api/quote/health
  * Basic health check for the backend
  * Supports both GET and HEAD methods for monitoring services
@@ -501,6 +695,76 @@ router.post('/verify-api', async (req, res) => {
         res.json(result);
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+/**
+ * POST /api/quote/parse-consultation
+ * Parse free-form consultation note using AI
+ * Body: { note: string }
+ * Returns: { extracted, missing_required, missing_recommended, suggested_questions, is_complete }
+ */
+router.post('/parse-consultation', async (req, res) => {
+    const startTime = Date.now();
+    try {
+        const { note } = req.body;
+
+        if (!note || typeof note !== 'string' || note.trim().length === 0) {
+            return res.status(400).json({ error: 'note is required and must be a non-empty string' });
+        }
+
+        const userName = req.userName || null;
+
+        // Send start log
+        sendActivityLog('AI 상담 메모 분석 시작', 'info', 0, userName);
+
+        // Set status to processing
+        setAgentStatus('processing');
+
+        // Parse the consultation note
+        const result = await parseConsultationNote(note.trim());
+
+        const responseTime = Date.now() - startTime;
+
+        if (result.success) {
+            // Always convert to formData format for preview (even if incomplete)
+            const formData = result.extracted ? convertToFormData(result.extracted) : null;
+
+            // Send completion log
+            sendActivityLog(`상담 메모 분석 완료 (${(responseTime / 1000).toFixed(1)}s)`, 'success', responseTime, userName);
+
+            // Track API call
+            trackApiCall('parse-consultation', responseTime, false, true, false, null, userName);
+
+            // Set status back to online
+            setAgentStatus('online');
+
+            res.json({
+                ...result,
+                formData,
+                responseTime
+            });
+        } else {
+            throw new Error(result.error || 'Failed to parse consultation note');
+        }
+    } catch (err) {
+        const responseTime = Date.now() - startTime;
+        const userName = req.userName || null;
+
+        // Send error log
+        sendActivityLog(`상담 메모 분석 실패: ${err.message}`, 'error', responseTime, userName);
+
+        trackApiCall('parse-consultation', responseTime, true, true, false, null, userName);
+
+        // Set status to error
+        setAgentStatus('error');
+
+        console.error('Consultation parsing error:', err);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to parse consultation note',
+            details: err.message
+        });
     }
 });
 

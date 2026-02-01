@@ -21,6 +21,7 @@ const PRICING = {
     options: {
         dualController: 200000,    // 듀얼컨트롤러
         acrylic: 6000,            // 아크릴
+        perforation: 8000,         // 타공 디자인 (셀당)
         frameFullSet: 700000,      // 프레임 풀세트
         topFrameOnly: 350000,      // 상부 프레임만
         sideFrameOnly: 300000      // 사이드 프레임만
@@ -58,25 +59,44 @@ export function calculateQuote({
     tiers,
     quantity = 1,
     controlPanelTiers = 4,
+    controlPanelColumn = 1, // 제어부 열 위치 (1-based)
+    columnConfigs = null, // 열별 설정 [{ tiers, tierConfig }, ...]
     options = {},
     region = 'seoul'
 }) {
-    // Calculate total cells
-    // 제어부가 있는 열은 제어부 단수로 계산, 나머지 열은 전체 단수로 계산
-    const regularColumns = Math.max(0, columns - 1); // 제어부를 제외한 일반 열 수
-    const regularCells = regularColumns * tiers; // 일반 열의 칸 수
-    const controlPanelCells = controlPanelTiers; // 제어부 열의 칸 수 (제어부 단수만큼)
+    // Calculate total cells (열별 설정 지원)
+    let regularCells = 0;
+    let maxTiers = tiers; // 함체부 가격 계산용 최대 단수
+
+    if (columnConfigs && Array.isArray(columnConfigs)) {
+        // 열별 설정이 있는 경우
+        for (let i = 0; i < columns; i++) {
+            const isControlPanel = (i + 1) === controlPanelColumn;
+            if (isControlPanel) {
+                continue; // 제어부 열은 별도 계산
+            }
+            const colTiers = columnConfigs[i]?.tiers || tiers;
+            regularCells += colTiers;
+            maxTiers = Math.max(maxTiers, colTiers);
+        }
+    } else {
+        // 기존 방식: 제어부 제외한 모든 열이 동일 단수
+        const regularColumns = Math.max(0, columns - 1);
+        regularCells = regularColumns * tiers;
+        maxTiers = tiers;
+    }
+
+    const controlPanelCells = controlPanelTiers; // 제어부 열의 칸 수
     const cellsPerUnit = regularCells + controlPanelCells;
     const totalCells = cellsPerUnit * quantity;
 
     // 1. Base price (제어부 기본가)
     const basePrice = PRICING.basePrice;
 
-    // 2. Control panel tier cost (now Locker Body Cost based on total tiers)
-    // "함체부" cost depends on the total height (tiers) and number of expansion columns
-    // (Total columns - 1 Control Panel column)
+    // 2. Control panel tier cost (함체부 가격 - 최대 단수 기준)
+    // "함체부" cost depends on the max height (tiers) and number of expansion columns
     const bodyColumns = Math.max(0, columns - 1);
-    const unitBodyCost = PRICING.controlPanelTiers[tiers] || 0;
+    const unitBodyCost = PRICING.controlPanelTiers[maxTiers] || 0;
     const lockerBodyCost = bodyColumns * unitBodyCost;
 
     // 3. Options cost
@@ -115,6 +135,19 @@ export function calculateQuote({
             quantity: acrylicQuantity,
             unitPrice: acrylicUnitPrice,
             price: acrylicCost
+        });
+    }
+
+    if (options.perforation) {
+        const perforationUnitPrice = PRICING.options.perforation;
+        const perforationQuantity = totalCells;
+        const perforationCost = perforationUnitPrice * perforationQuantity;
+        optionsCost += perforationCost;
+        optionsBreakdown.push({
+            name: '타공 디자인',
+            quantity: perforationQuantity,
+            unitPrice: perforationUnitPrice,
+            price: perforationCost
         });
     }
 

@@ -2,6 +2,56 @@
 
 B2B 락커 견적 시스템 - 고객 문의 기반 견적 계산 → 2D 레이아웃 → 3D 설치사진 → Excel 견적서
 
+---
+
+## Claude 행동 규칙
+
+### 프롬프트 저장 (CRITICAL)
+**사용자의 모든 프롬프트를 `prompt.md` 파일에 저장할 것.**
+
+- 사용자가 새 프롬프트를 입력할 때마다 `prompt.md`에 append
+- 형식: 타임스탬프 + 프롬프트 내용
+- 파일 위치: 프로젝트 루트 (`/Users/Injeon/Desktop/IJ/coding/Agent/world_quotation/prompt.md`)
+
+### CSS/Flexbox 규칙 (CRITICAL)
+**Flex 레이아웃에서 요소가 찌그러지거나 줄바꿈되는 문제 방지:**
+
+1. **버튼/라벨 텍스트 줄바꿈 방지**
+   ```css
+   white-space: nowrap;  /* 필수 - 텍스트 한 줄 유지 */
+   ```
+
+2. **Flex 자식 요소 축소 방지**
+   ```css
+   flex-shrink: 0;  /* 필수 - 공간 부족해도 축소 안 함 */
+   ```
+
+3. **Input 너비 지정**
+   ```css
+   /* BAD - 남은 공간 다 차지하려 해서 다른 요소 압박 */
+   min-width: 160px;
+
+   /* GOOD - 고정 너비로 예측 가능한 레이아웃 */
+   width: 140px;
+   ```
+
+4. **컨테이너 너비 인식**
+   - `option-group` 등 제한된 컨테이너 안에 넣으면 너비 제한됨
+   - 전체 너비 필요한 요소는 상위 컨테이너 밖으로 배치
+
+5. **인라인 요소 그룹 패턴**
+   ```css
+   .inline-group {
+     display: flex;
+     align-items: center;
+     gap: 10px;
+   }
+   .inline-group > * {
+     flex-shrink: 0;      /* 모든 자식 축소 방지 */
+     white-space: nowrap; /* 텍스트 줄바꿈 방지 */
+   }
+   ```
+
 ## 프로젝트 개요
 
 ```

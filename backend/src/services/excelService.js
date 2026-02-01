@@ -261,7 +261,8 @@ async function createCoverSheet(workbook, quoteData, imageBase64, customerInfo, 
     // 제품명
     sheet.mergeCells(`A${rowIndex}:H${rowIndex}`);
     const productCell = sheet.getCell(`A${rowIndex}`);
-    productCell.value = `물품보관함 ${input.columns}열 × ${input.tiers}단`;
+    const frameText = input.options?.frameText || '물품보관함';
+    productCell.value = `${frameText} ${input.columns}열 × ${input.tiers}단`;
     productCell.font = { name: 'Malgun Gothic', size: 22, bold: true, color: { argb: 'FF333333' } };
     productCell.alignment = { horizontal: 'center', vertical: 'middle' };
     sheet.getRow(rowIndex).height = 40;
@@ -426,7 +427,7 @@ async function createDetailSheet(workbook, quoteData, previewImageBase64, custom
         { label: '견 적 일 자', value: formattedDate },
         { label: '현  장  명', value: customerInfo.companyName || '귀하' },
         { label: '수  신  인', value: customerInfo.contactName || '담당자님' },
-        { label: '견 적 품 목', value: '전자식 물품보관함' },
+        { label: '견 적 품 목', value: `전자식 ${input.options?.frameText || '물품보관함'}` },
         { label: '유 효 기 간', value: '1년' }
     ];
 
@@ -678,6 +679,10 @@ async function createDetailSheet(workbook, quoteData, previewImageBase64, custom
                 spec = '▸ 투명 아크릴 도어\n▸ 내용물 가시성';
                 unit = '칸';
                 remark = '선택 칸 적용';
+            } else if (opt.name.includes('타공')) {
+                spec = '▸ 원형 타공 패턴\n▸ 통기성 및 디자인';
+                unit = '칸';
+                remark = '전체 칸 적용';
             } else {
                 spec = '▸ ' + opt.name;
             }

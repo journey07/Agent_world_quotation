@@ -24,7 +24,7 @@ function getAI() {
  * @param {string} mimeType - MIME type of the image (e.g., 'image/png')
  * @returns {Promise<string>} Base64 encoded generated 3D visualization
  */
-export async function generate3DInstallation(base64Image, mimeType = 'image/png', frameType = 'none', columns = null, tiers = null, installationBackground = null) {
+export async function generate3DInstallation(base64Image, mimeType = 'image/png', frameType = 'none', columns = null, tiers = null, installationBackground = null, frameText = '물품보관함') {
     console.log('Starting 3D image generation...');
     console.log(`Requested Background: ${installationBackground || 'Default'}`);
 
@@ -44,32 +44,56 @@ export async function generate3DInstallation(base64Image, mimeType = 'image/png'
         let frameDescription = "";
         switch (frameType) {
             case 'fullSet':
-                frameDescription = "- IMPORTANT: The locker unit is surrounded by SOLID BLACK decorative frames on ALL sides (top, left, and right). The top frame must appear as a black signboard plate with the white text '물품보관함' clearly printed on it like a header. The side panels (left and right) must be COMPLETELY SOLID BLACK from edge to edge - no white interior, no light-colored surfaces, just pure solid black panels covering the entire sides.";
+                frameDescription = `- IMPORTANT: The locker unit is surrounded by SOLID BLACK decorative frames on ALL sides (top, left, and right). The top frame must appear as a black signboard plate with the white text '${frameText}' clearly printed on it like a header. The side panels (left and right) must be COMPLETELY SOLID BLACK from edge to edge - no white interior, no light-colored surfaces, just pure solid black panels covering the entire sides.`;
                 break;
             case 'topOnly':
-                frameDescription = "- IMPORTANT: The locker unit has a distinct black decorative top signboard ONLY. Ensure this top frame is clearly visible with the white text '물품보관함' on it. No side frames should be present.";
+                frameDescription = `- IMPORTANT: The locker unit has a distinct black decorative top signboard ONLY. Ensure this top frame is clearly visible with the white text '${frameText}' on it. No side frames should be present.`;
                 break;
             case 'sideOnly':
                 frameDescription = "- IMPORTANT: The locker unit has SOLID BLACK decorative side panels ONLY (left and right). These side panels must be COMPLETELY BLACK from edge to edge - no white interior, no light-colored surfaces, just pure solid black panels covering the entire left and right sides. Ensure these solid black side frames are clearly visible. No top signboard should be present.";
                 break;
             case 'topAndSide':
-                frameDescription = "- IMPORTANT: The locker unit has both a black decorative top signboard with white text '물품보관함' AND SOLID BLACK decorative side panels (left and right). The side panels must be COMPLETELY BLACK from edge to edge - no white interior, no light-colored surfaces, just pure solid black panels. Ensure all these decorative elements are clearly visible.";
+                frameDescription = `- IMPORTANT: The locker unit has both a black decorative top signboard with white text '${frameText}' AND SOLID BLACK decorative side panels (left and right). The side panels must be COMPLETELY BLACK from edge to edge - no white interior, no light-colored surfaces, just pure solid black panels. Ensure all these decorative elements are clearly visible.`;
                 break;
             default:
                 frameDescription = "- Standard installation without extra outer frames.";
         }
 
-        // Generate count description if provided
+        // Generate count description if provided - 프롬프트 엔지니어링 최적화
         let countDescription = "";
+        let gridPriming = "";
+        let gridReminder = "";
         if (columns && tiers) {
+            // 1. 프라이밍: 시작부분에 가장 중요한 제약 명시
+            gridPriming = `[STRUCTURE LOCK] This locker has EXACTLY ${columns} columns × ${tiers} rows = ${columns * tiers} doors. This structure is NON-NEGOTIABLE.
+
+`;
+            // 2. 중간 상세 설명
             countDescription = `
-- CRITICAL Grid Structure Requirement:
-  1. GRID DIMENSIONS: EXACTLY ${columns} columns (width) x ${tiers} tiers (height).
-  2. TOTAL CELL COUNT: There MUST be exactly ${columns * tiers} individual locker doors/cells in total.
-  3. VERTICAL STRUCTURE: Each column MUST contain exactly ${tiers} locker doors stacked vertically.
-  4. HORIZONTAL STRUCTURE: Each row MUST contain exactly ${columns} locker doors side-by-side.
-  5. STRICT ADHERENCE: Do NOT add or remove any columns or tiers. The generated 3D model MUST be an exact structural replica of the provided 2D grid image.
-  6. VERIFICATION: Count the boxes in your output. If the count is not ${columns * tiers}, the generation is incorrect.`;
+## MANDATORY GRID STRUCTURE (READ CAREFULLY)
+The input image shows a ${columns}×${tiers} locker grid. Your output MUST preserve this EXACT structure:
+
+┌${'─'.repeat(columns * 4)}┐
+${Array(tiers).fill('│' + Array(columns).fill(' ■ ').join('') + '│').join('\n')}
+└${'─'.repeat(columns * 4)}┘
+
+- HORIZONTAL: Count ${columns} doors in each row (left to right)
+- VERTICAL: Count ${tiers} doors in each column (top to bottom)
+- TOTAL: ${columns} × ${tiers} = ${columns * tiers} individual locker doors
+
+FAILURE CONDITIONS (will make the output incorrect):
+✗ Adding extra columns or rows
+✗ Merging multiple doors into one
+✗ Omitting any doors
+✗ Changing the grid proportions
+
+SUCCESS CONDITION:
+✓ Output has exactly ${columns * tiers} visible, countable locker doors arranged in ${columns} columns and ${tiers} rows
+`;
+            // 3. 마무리 리마인더 (recency effect)
+            gridReminder = `
+
+[FINAL CHECK] Before completing: Verify your output has EXACTLY ${columns} columns × ${tiers} rows = ${columns * tiers} doors. Count them.`;
         }
 
         // Craft a detailed prompt for high-quality 3D visualization
@@ -79,11 +103,11 @@ export async function generate3DInstallation(base64Image, mimeType = 'image/png'
 
         const prompt = [
             {
-                text: `Transform this storage locker layout into a professional 3D installation visualization.
+                text: `${gridPriming}Transform this storage locker layout into a professional 3D installation visualization.
 
 Requirements:
 - ${envDescription}
-- INSTALLATION STYLE: Freestanding / Standalone unit. The locker should NOT appear recessed into a wall. 
+- INSTALLATION STYLE: Freestanding / Standalone unit. The locker should NOT appear recessed into a wall.
 - Show the locker as a solid 3D object with visible depth, showcasing its side panels and top surface clearly.
 - Use realistic lighting with soft shadows and natural ambient light
 - Professional architectural visualization style with photorealistic quality
@@ -97,7 +121,7 @@ Requirements:
 ${frameDescription}
 ${countDescription}
 
-Style: Clean, professional, architectural photography, 3D render, high resolution, realistic materials`
+Style: Clean, professional, architectural photography, 3D render, high resolution, realistic materials${gridReminder}`
             },
             {
                 inlineData: {
