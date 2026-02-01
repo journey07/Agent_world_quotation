@@ -45,64 +45,25 @@ const API_3D_URL = getApi3DUrl();
  * @returns {Object} 헤더 객체
  */
 function getHeadersWithUser(user) {
-  // #region agent log
-  fetch('http://127.0.0.1:7246/ingest/9ba8d60d-8408-44f9-930a-ad25fb3670fc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.jsx:46',message:'getHeadersWithUser called',data:{hasUser:!!user,userName:user?.name,username:user?.username,allUserFields:user?Object.keys(user):[]},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'J'})}).catch(()=>{});
-  // #endregion
   const headers = { 'Content-Type': 'application/json' };
   if (user) {
-    // name이 있으면 name 사용, 없으면 username 사용
     const userName = user.name || user.username || null;
-    // #region agent log
-    fetch('http://127.0.0.1:7246/ingest/9ba8d60d-8408-44f9-930a-ad25fb3670fc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.jsx:50',message:'userName determined',data:{userName,source:user.name?'name':'username',hasName:!!user.name,hasUsername:!!user.username},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})}).catch(()=>{});
-    // #endregion
     if (userName) {
-      // HTTP 헤더는 ISO-8859-1만 지원하므로 한글 등 유니코드 문자는 Base64로 인코딩
-      // Base64 인코딩: UTF-8로 인코딩 후 Base64 변환
       try {
-        // 한글을 올바르게 인코딩하는 방법
-        // 방법 1: TextEncoder 사용 (최신 브라우저)
         let base64String;
         if (typeof TextEncoder !== 'undefined') {
           const utf8Bytes = new TextEncoder().encode(userName);
           base64String = btoa(String.fromCharCode(...utf8Bytes));
-          // #region agent log
-          fetch('http://127.0.0.1:7246/ingest/9ba8d60d-8408-44f9-930a-ad25fb3670fc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.jsx:56',message:'Base64 encoded with TextEncoder',data:{userName,base64String,method:'TextEncoder'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'G'})}).catch(()=>{});
-          // #endregion
         } else {
-          // 폴백: 기존 방식 (unescape + encodeURIComponent)
           base64String = btoa(unescape(encodeURIComponent(userName)));
-          // #region agent log
-          fetch('http://127.0.0.1:7246/ingest/9ba8d60d-8408-44f9-930a-ad25fb3670fc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.jsx:60',message:'Base64 encoded with fallback',data:{userName,base64String,method:'fallback'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'G'})}).catch(()=>{});
-          // #endregion
         }
         headers['X-User-Name'] = base64String;
-        headers['X-User-Name-Encoded'] = 'base64'; // 인코딩 방식 표시
-        console.log('📤 Sending request with user name (encoded):', userName, '->', base64String);
+        headers['X-User-Name-Encoded'] = 'base64';
       } catch (err) {
-        // #region agent log
-        fetch('http://127.0.0.1:7246/ingest/9ba8d60d-8408-44f9-930a-ad25fb3670fc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.jsx:66',message:'Encoding failed',data:{error:err.message,userName},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'G'})}).catch(()=>{});
-        // #endregion
-        console.error('⚠️ Failed to encode user name:', err);
-        // 인코딩 실패 시 원본 사용하지 않고 경고만 표시
-        console.warn('⚠️ Using original user name without encoding');
         headers['X-User-Name'] = userName;
-        // 인코딩 플래그는 설정하지 않음
       }
-    } else {
-      // #region agent log
-      fetch('http://127.0.0.1:7246/ingest/9ba8d60d-8408-44f9-930a-ad25fb3670fc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.jsx:73',message:'No userName found',data:{user},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})}).catch(()=>{});
-      // #endregion
-      console.warn('⚠️ User object exists but no name or username found:', user);
     }
-  } else {
-    // #region agent log
-    fetch('http://127.0.0.1:7246/ingest/9ba8d60d-8408-44f9-930a-ad25fb3670fc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.jsx:76',message:'No user object',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'J'})}).catch(()=>{});
-    // #endregion
-    console.warn('⚠️ No user object provided to getHeadersWithUser');
   }
-  // #region agent log
-  fetch('http://127.0.0.1:7246/ingest/9ba8d60d-8408-44f9-930a-ad25fb3670fc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.jsx:79',message:'Returning headers',data:{hasXUserName:!!headers['X-User-Name'],xUserName:headers['X-User-Name'],hasEncoded:!!headers['X-User-Name-Encoded']},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'I'})}).catch(()=>{});
-  // #endregion
   return headers;
 }
 
@@ -582,13 +543,9 @@ function App({ user, onLogout }) {
   };
 
   useEffect(() => {
-    console.log('🏁 App component mounted - fetching inquiries');
     const controller = new AbortController();
     fetchInquiries(controller.signal);
-    return () => {
-      console.log('🛑 App component unmounting');
-      controller.abort();
-    };
+    return () => controller.abort();
   }, []);
 
   const handleDownloadExcel = async (force = false) => {

@@ -18,7 +18,6 @@ function Root() {
         const sessionExpiry = localStorage.getItem('sessionExpiry')
         if (sessionExpiry && Date.now() > parseInt(sessionExpiry)) {
           // 만료됨 - 자동 로그아웃
-          console.log('🔒 세션 만료 - 자동 로그아웃')
           localStorage.removeItem('user')
           localStorage.removeItem('userId')
           localStorage.removeItem('sessionExpiry')
@@ -39,10 +38,8 @@ function Root() {
   const handleLoginSuccess = (userData) => {
     // 다음 날 00시(KST) 만료 시간 계산 및 저장
     const tomorrow = new Date()
-    tomorrow.setHours(24, 0, 0, 0) // 다음 날 00:00:00
+    tomorrow.setHours(24, 0, 0, 0)
     localStorage.setItem('sessionExpiry', tomorrow.getTime().toString())
-    console.log('🔐 세션 만료 시간 설정:', tomorrow.toLocaleString('ko-KR'))
-
     setUser(userData)
   }
 
@@ -82,8 +79,6 @@ function Root() {
 
   return <App user={user} onLogout={handleLogout} />
 }
-
-console.log('🚀 Main entry point executing');
 
 createRoot(document.getElementById('root')).render(
   <Root />
