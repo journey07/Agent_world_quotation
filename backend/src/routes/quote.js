@@ -490,7 +490,7 @@ router.post('/preview-image', async (req, res) => {
             mimeType: 'image/png'
         });
     } catch (err) {
-        trackApiCall('preview-image', Date.now() - startTime, true, false, true, null, req.userName || null);
+        trackApiCall('preview-image', Date.now() - startTime, true, false, false, null, req.userName || null);
         res.status(500).json({ error: err.message });
     }
 });
@@ -734,7 +734,7 @@ router.post('/parse-consultation', async (req, res) => {
             sendActivityLog(`상담 메모 분석 완료 (${(responseTime / 1000).toFixed(1)}s)`, 'success', responseTime, userName);
 
             // Track API call
-            trackApiCall('parse-consultation', responseTime, false, true, false, null, userName);
+            trackApiCall('parse-consultation', responseTime, false, true, true, null, userName);
 
             // Set status back to online
             setAgentStatus('online');
@@ -754,7 +754,7 @@ router.post('/parse-consultation', async (req, res) => {
         // Send error log
         sendActivityLog(`상담 메모 분석 실패: ${err.message}`, 'error', responseTime, userName);
 
-        trackApiCall('parse-consultation', responseTime, true, true, false, null, userName);
+        trackApiCall('parse-consultation', responseTime, true, true, true, null, userName);
 
         // Set status to error
         setAgentStatus('error');
