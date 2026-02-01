@@ -227,15 +227,15 @@ function generateSuggestedQuestions(missingRequired, missingRecommended) {
 
     const questionMap = {
         'total_lockers': '보관함 몇 칸 정도 필요하세요?',
-        'columns': '보관함 몇 열로 구성해드릴까요?',
-        'tiers': '한 열에 몇 칸 구성으로 해드릴까요?',
+        'columns': '함 구성은 몇 열로 하시겠어요?',
+        'tiers': '한 열에 몇 칸으로 구성하시겠어요?',
         'quantity': '몇 세트 필요하세요?',
         'color': '함 색상(도어 색상)은 어떤 걸로 하시겠어요? (화이트, 블랙, 아이보리 등)',
         'region': '설치 지역은 어디신가요?',
         'company_name': '고객사명(또는 상호명)이 어떻게 되시나요?',
         'contact_name': '담당자분 성함을 알 수 있을까요?',
         'contact_phone': '연락 가능한 전화번호 알려주시겠어요?',
-        'frame_type': '프레임은 상부와 사이드 모두 포함할까요, 아니면 상부만 또는 사이드만 해드릴까요?',
+        'frame_type': '프레임은 상부와 사이드 모두 포함할까요, 아니면 상부만 / 사이드만 해드릴까요?',
         'installation_date': '설치 희망일이 언제쯤이세요?'
     };
 
@@ -357,7 +357,135 @@ export function convertToFormData(extracted) {
     };
 }
 
+/**
+ * AI 컨설턴트 조언 생성
+ * 추출된 정보와 계산된 구성을 기반으로 맞춤형 조언 제공
+ * @param {Object} extracted - 파싱된 고객 정보
+ * @param {Object} formData - 자동 계산된 견적 데이터
+ * @returns {Promise<Object>} 컨설턴트 조언 객체
+ */
+export async function generateConsultantAdvice(extracted, formData) {
+    if (!extracted || !formData) {
+        return null;
+    }
+
+    // 기본 가격 정보
+    const BASE_PRICE_PER_CELL = 25000;
+    const OPTION_PRICES = {
+        handle: 3000,        // 손잡이 (칸당)
+        perforation: 5000,   // 타공 (칸당)
+        acrylic: 8000,       // 아크릴 도어 (칸당)
+        frame_fullSet: 150000,  // 프레임 풀세트 (세트당)
+        frame_topOnly: 80000,   // 상부 프레임 (세트당)
+        frame_sideOnly: 100000, // 사이드 프레임 (세트당)
+        dualController: 200000  // 듀얼 컨트롤러 (세트당)
+    };
+
+    // 총 칸수 계산
+    const columns = formData.columns || 5;
+    const tiers = formData.tiers || 6;
+    const quantity = formData.quantity || 1;
+    const totalCells = columns * tiers * quantity;
+
+    // 기본 가격 계산
+    const basePrice = totalCells * BASE_PRICE_PER_CELL;
+
+    const prompt = `당신은 락커(물품보관함) 견적 전문 컨설턴트입니다.
+내부 영업 직원에게 이 고객 건에 대해 조언해주세요.
+
+[고객 정보]
+- 업체명: ${extracted.company_name || '미입력'}
+- 업종: ${extracted.industry || '미입력'}
+- 요청 칸수: ${extracted.total_lockers || '미입력'}칸
+- 설치 지역: ${extracted.region || '미입력'}
+- 예산: ${extracted.budget ? extracted.budget.toLocaleString() + '원' : '미입력'}
+- 색상 요청: ${extracted.color || '미입력'}
+- 설치 희망일: ${extracted.installation_date || '미입력'}
+- 담당자: ${extracted.contact_name || '미입력'}
+
+[자동 계산된 구성]
+- 열: ${columns}열
+- 단: ${tiers}단
+- 세트: ${quantity}세트
+- 총 칸수: ${totalCells}칸
+
+[가격 정보]
+- 기본 가격: 칸당 ${BASE_PRICE_PER_CELL.toLocaleString()}원
+- 본체 예상가: ${basePrice.toLocaleString()}원
+- 옵션 추가비: 손잡이 ${OPTION_PRICES.handle.toLocaleString()}원/칸, 타공 ${OPTION_PRICES.perforation.toLocaleString()}원/칸, 아크릴 ${OPTION_PRICES.acrylic.toLocaleString()}원/칸
+- 프레임: 풀세트 ${OPTION_PRICES.frame_fullSet.toLocaleString()}원, 상부만 ${OPTION_PRICES.frame_topOnly.toLocaleString()}원, 사이드만 ${OPTION_PRICES.frame_sideOnly.toLocaleString()}원
+
+다음 JSON 형식으로만 응답하세요 (다른 텍스트 없이):
+{
+  "recommended_config": "추천 구성과 그 이유 (2-3문장)",
+  "industry_options": "업종 특성에 맞는 옵션 추천 (2-3문장). 업종 정보 없으면 null",
+  "budget_review": "예산 대비 검토 (2-3문장). 예산 정보 없으면 null",
+  "warnings": "일정, 지역, 특이사항 등 주의점 (1-2문장). 특이사항 없으면 null"
+}
+
+조언 규칙:
+1. 짧고 핵심만 말하세요
+2. 영업 직원이 바로 고객에게 제안할 수 있도록 구체적으로
+3. 업종별 특성:
+   - 피트니스/헬스장: 타공(환기), 손잡이 권장, 아크릴은 불필요
+   - 사우나/찜질방: 타공 필수, 손잡이 권장
+   - 학원/학교: 아크릴 권장 (내용물 확인), 타공 선택
+   - 사무실: 깔끔한 디자인, 프레임 권장
+   - 카페/상업시설: 디자인 중시, 프레임+아크릴 고려
+4. 세트 분할 제안: 큰 규격보다 중간 규격 2세트가 설치 유연성 높음`;
+
+    try {
+        const genAI = getAI();
+        const response = await genAI.models.generateContent({
+            model: "gemini-2.0-flash",
+            contents: prompt,
+            config: {
+                temperature: 0.3,
+                maxOutputTokens: 500,
+            }
+        });
+
+        // Extract text from response
+        let text = '';
+        if (response.candidates && response.candidates.length > 0) {
+            for (const part of response.candidates[0].content.parts) {
+                if (part.text) {
+                    text += part.text;
+                }
+            }
+        }
+
+        console.log('Consultant Advice Raw Response:', text.substring(0, 300));
+
+        // Clean up response
+        text = text.replace(/```json\s*/gi, '').replace(/```\s*/gi, '').trim();
+
+        // Extract JSON
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+            text = jsonMatch[0];
+        }
+
+        // Fix string "null" to actual null
+        text = text.replace(/:\s*"null"/gi, ': null');
+
+        const advice = JSON.parse(text);
+
+        return {
+            recommended_config: advice.recommended_config || null,
+            industry_options: advice.industry_options || null,
+            budget_review: advice.budget_review || null,
+            warnings: advice.warnings || null
+        };
+
+    } catch (error) {
+        console.error('Error generating consultant advice:', error);
+        return null;
+    }
+}
+
 export default {
     parseConsultationNote,
-    convertToFormData
+    convertToFormData,
+    generateConsultantAdvice
 };

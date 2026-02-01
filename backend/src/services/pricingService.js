@@ -93,11 +93,30 @@ export function calculateQuote({
     // 1. Base price (제어부 기본가)
     const basePrice = PRICING.basePrice;
 
-    // 2. Control panel tier cost (함체부 가격 - 최대 단수 기준)
-    // "함체부" cost depends on the max height (tiers) and number of expansion columns
+    // 2. Control panel tier cost (함체부 가격 - 단수별 그룹화)
+    // 열별로 단수를 집계하여 그룹화
     const bodyColumns = Math.max(0, columns - 1);
-    const unitBodyCost = PRICING.controlPanelTiers[maxTiers] || 0;
-    const lockerBodyCost = bodyColumns * unitBodyCost;
+    const tierGroups = {};
+
+    for (let i = 0; i < columns; i++) {
+        if ((i + 1) === controlPanelColumn) continue; // 제어부 열 제외
+        const colTiers = columnConfigs?.[i]?.tiers || tiers;
+        tierGroups[colTiers] = (tierGroups[colTiers] || 0) + 1;
+    }
+
+    // 그룹화된 함체부 breakdown 생성
+    const lockerBodiesBreakdown = Object.entries(tierGroups)
+        .map(([t, cols]) => ({
+            tiers: Number(t),
+            columns: cols,
+            unitCost: PRICING.controlPanelTiers[t] || 0,
+            totalCost: cols * (PRICING.controlPanelTiers[t] || 0)
+        }))
+        .sort((a, b) => a.tiers - b.tiers); // 단수 오름차순 정렬
+
+    // 총 함체부 비용
+    const lockerBodyCost = lockerBodiesBreakdown.reduce((sum, g) => sum + g.totalCost, 0);
+    const unitBodyCost = PRICING.controlPanelTiers[maxTiers] || 0; // 하위 호환용
 
     // 3. Options cost
     let optionsCost = 0;
@@ -173,8 +192,9 @@ export function calculateQuote({
         },
         breakdown: {
             basePrice,
-            lockerBodyLabel: `함체부 ${tiers}단 x ${bodyColumns}열`, // Renamed from controlPanelTierLabel
-            lockerBodyCost, // Renamed from controlPanelCost
+            lockerBodyLabel: `함체부 ${tiers}단 x ${bodyColumns}열`, // 하위 호환용
+            lockerBodiesBreakdown, // 단수별 그룹화 배열
+            lockerBodyCost, // 총 함체부 비용
             unitBodyCost,
             bodyColumns,
             optionsCost,

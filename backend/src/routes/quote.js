@@ -7,7 +7,7 @@ import { generate3DInstallation } from '../services/geminiService.js';
 import { saveInquiry, getAllInquiries, updateInquiry, deleteInquiry } from '../services/inquiryService.js';
 import { trackApiCall, sendActivityLog, getStatsForDashboard, toggleAgentStatus, setAgentStatus } from '../services/statsService.js';
 import { verifyConnection } from '../services/geminiService.js';
-import { parseConsultationNote, convertToFormData } from '../services/consultationService.js';
+import { parseConsultationNote, convertToFormData, generateConsultantAdvice } from '../services/consultationService.js';
 
 const router = Router();
 
@@ -730,11 +730,20 @@ router.post('/parse-consultation', async (req, res) => {
             // Always convert to formData format for preview (even if incomplete)
             const formData = result.extracted ? convertToFormData(result.extracted) : null;
 
+            // Generate consultant advice
+            let consultantAdvice = null;
+            if (result.extracted && formData) {
+                sendActivityLog('AI 컨설턴트 조언 생성 중...', 'info', 0, userName);
+                consultantAdvice = await generateConsultantAdvice(result.extracted, formData);
+            }
+
+            const totalResponseTime = Date.now() - startTime;
+
             // Send completion log
-            sendActivityLog(`상담 메모 분석 완료 (${(responseTime / 1000).toFixed(1)}s)`, 'success', responseTime, userName);
+            sendActivityLog(`상담 메모 분석 완료 (${(totalResponseTime / 1000).toFixed(1)}s)`, 'success', totalResponseTime, userName);
 
             // Track API call
-            trackApiCall('parse-consultation', responseTime, false, true, true, null, userName);
+            trackApiCall('parse-consultation', totalResponseTime, false, true, true, null, userName);
 
             // Set status back to online
             setAgentStatus('online');
@@ -742,7 +751,8 @@ router.post('/parse-consultation', async (req, res) => {
             res.json({
                 ...result,
                 formData,
-                responseTime
+                consultant_advice: consultantAdvice,
+                responseTime: totalResponseTime
             });
         } else {
             throw new Error(result.error || 'Failed to parse consultation note');

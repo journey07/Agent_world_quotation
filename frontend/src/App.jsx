@@ -164,6 +164,8 @@ function App({ user, onLogout }) {
   const [openPopoverCol, setOpenPopoverCol] = useState(null); // 열별 높이 설정 팝오버 (null 또는 열 인덱스)
   const [copiedTierConfig, setCopiedTierConfig] = useState(null); // 복사된 열 설정 { tiers, tierConfig }
   const resultSectionRef = useRef(null);
+  const [isRecalculating, setIsRecalculating] = useState(false); // 견적 재계산 중 상태
+  const recalculateTimeoutRef = useRef(null); // 디바운스용 타이머
 
   // 상담 노트 모달 상태
   const [isConsultationModalOpen, setIsConsultationModalOpen] = useState(false);
@@ -281,6 +283,36 @@ function App({ user, onLogout }) {
     }));
   };
 
+  // 견적 재계산 함수 (레이아웃 변경 시 호출)
+  const recalculateQuote = async (config) => {
+    setIsRecalculating(true);
+    try {
+      const calcRes = await fetch(`${API_URL}/calculate`, {
+        method: 'POST',
+        headers: getHeadersWithUser(user),
+        body: JSON.stringify({
+          columns: config.columns,
+          tiers: config.tiers,
+          quantity: formData.quantity,
+          controlPanelTiers: config.controlPanelTiers,
+          controlPanelColumn: config.controlPanelColumn,
+          columnConfigs: config.columnConfigs,
+          options: formData.options,
+          region: formData.region
+        })
+      });
+
+      if (calcRes.ok) {
+        const calcData = await calcRes.json();
+        setResult(calcData);
+      }
+    } catch (err) {
+      console.error('Recalculate error:', err);
+    } finally {
+      setIsRecalculating(false);
+    }
+  };
+
   // 미리보기 이미지 갱신 함수 (이미지 위 버튼 클릭 시 호출)
   // previewConfig를 사용하여 기본 구성과 독립적으로 동작
   const refreshPreviewImage = async (updatedConfig = null) => {
@@ -316,6 +348,14 @@ function App({ user, onLogout }) {
         // 갱신된 config 저장
         if (updatedConfig) {
           setPreviewConfig(updatedConfig);
+
+          // 가격 재계산 (디바운스 400ms)
+          if (recalculateTimeoutRef.current) {
+            clearTimeout(recalculateTimeoutRef.current);
+          }
+          recalculateTimeoutRef.current = setTimeout(() => {
+            recalculateQuote(updatedConfig);
+          }, 400);
         }
       }
     } catch (err) {
@@ -1759,7 +1799,7 @@ function App({ user, onLogout }) {
 
           {/* Right: Quote Summary */}
           <div className="glass-card quote-summary-card">
-            <h2>견적 요약</h2>
+            <h2>견적 요약 {isRecalculating && <span className="recalc-spinner">↻</span>}</h2>
 
             {result ? (
               <div className="results-container">
@@ -1787,15 +1827,31 @@ function App({ user, onLogout }) {
                     <span>제어부</span>
                     <span>{formatPrice(result.breakdown.basePrice)}</span>
                   </div>
-                  <div className="breakdown-item">
-                    <span>{result.breakdown.lockerBodyLabel}</span>
-                    <div className="breakdown-price-col">
-                      <span className="sub-detail">
-                        ({formatPrice(result.breakdown.unitBodyCost)} × {result.breakdown.bodyColumns}열)
-                      </span>
-                      <span>{formatPrice(result.breakdown.lockerBodyCost)}</span>
+                  {/* 함체부 - 단수별 그룹화 */}
+                  {result.breakdown.lockerBodiesBreakdown?.length > 0 ? (
+                    result.breakdown.lockerBodiesBreakdown.map((body, idx) => (
+                      <div key={idx} className="breakdown-item">
+                        <span>함체부 {body.tiers}단</span>
+                        <div className="breakdown-price-col">
+                          <span className="sub-detail">
+                            ({formatPrice(body.unitCost)} × {body.columns}열)
+                          </span>
+                          <span>{formatPrice(body.totalCost)}</span>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    /* 하위 호환 - 기존 단일 항목 */
+                    <div className="breakdown-item">
+                      <span>{result.breakdown.lockerBodyLabel}</span>
+                      <div className="breakdown-price-col">
+                        <span className="sub-detail">
+                          ({formatPrice(result.breakdown.unitBodyCost)} × {result.breakdown.bodyColumns}열)
+                        </span>
+                        <span>{formatPrice(result.breakdown.lockerBodyCost)}</span>
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   {result.breakdown.optionsBreakdown && result.breakdown.optionsBreakdown.length > 0 && (
                     <>

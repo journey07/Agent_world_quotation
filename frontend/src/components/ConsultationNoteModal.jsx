@@ -83,7 +83,7 @@ function ConsultationNoteModal({
     };
   }, [isOpen, handleClose]);
 
-  // AI 정리하기
+  // AI 분석하기
   const handleParse = async () => {
     if (!note.trim()) {
       setError('상담 내용을 입력해주세요.');
@@ -187,16 +187,13 @@ function ConsultationNoteModal({
   return (
     <div className="consultation-modal-overlay" onClick={handleClose}>
       <div className="consultation-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="consultation-modal-header">
-          <h2>
-            {parseResult ? (
-              <><span className="header-icon">&#10003;</span> AI 분석 결과</>
-            ) : (
-              <><span className="header-icon">&#9998;</span> 새 상담</>
-            )}
-          </h2>
+        <div className={`consultation-modal-header ${parseResult ? 'header-complete' : 'header-new'}`}>
+          <div className="header-content">
+            <span className="header-status-dot"></span>
+            <h2>{parseResult ? '분석 완료' : '새 상담'}</h2>
+          </div>
           <button className="close-btn" onClick={handleClose} aria-label="닫기">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <path d="M18 6L6 18M6 6l12 12" />
             </svg>
           </button>
@@ -207,7 +204,6 @@ function ConsultationNoteModal({
             /* 메모 입력 화면 */
             <>
               <div className="note-input-section">
-                <label className="note-label">상담 내용</label>
                 <textarea
                   className="note-textarea"
                   value={note}
@@ -245,11 +241,11 @@ function ConsultationNoteModal({
                   ) : (
                     <>
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M12 2a10 10 0 1 0 10 10H12V2z" />
-                        <path d="M12 2a10 10 0 0 1 10 10" />
-                        <circle cx="12" cy="12" r="3" />
+                        <circle cx="11" cy="11" r="8" />
+                        <path d="M21 21l-4.35-4.35" />
+                        <path d="M11 8v6M8 11h6" />
                       </svg>
-                      정리해줘
+                      분석해줘
                     </>
                   )}
                 </button>
@@ -260,13 +256,13 @@ function ConsultationNoteModal({
             <>
               <div className="parse-result-section">
                 {/* 취합된 정보 */}
-                <div className="result-card">
+                <div className="result-card extracted-card">
                   <h3 className="result-card-title">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                      <polyline points="22 4 12 14.01 9 11.01" />
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M9 12l2 2 4-4" />
+                      <rect x="3" y="3" width="18" height="18" rx="2" />
                     </svg>
-                    잘 취합된 정보입니다.
+                    취합된 정보
                   </h3>
                   <div className="extracted-grid">
                     {Object.entries(parseResult.extracted || {}).map(([key, value]) => {
@@ -287,13 +283,13 @@ function ConsultationNoteModal({
                 {/* 미취합 정보 */}
                 {(parseResult.missing_required?.length > 0 || parseResult.missing_recommended?.length > 0) && (
                   <div className="result-card missing-card">
-                    <h3 className="result-card-title warning">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <h3 className="result-card-title">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
                         <line x1="12" y1="9" x2="12" y2="13" />
                         <line x1="12" y1="17" x2="12.01" y2="17" />
                       </svg>
-                      아직 취합되지 않은 정보에요!
+                      미취합 정보
                     </h3>
                     <div className="missing-list">
                       {parseResult.missing_required?.map((field) => (
@@ -312,33 +308,103 @@ function ConsultationNoteModal({
                   </div>
                 )}
 
-                {/* 추천 질문 */}
-                {parseResult.suggested_questions?.length > 0 && (
-                  <div className="result-card questions-card">
-                    <h3 className="result-card-title">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <circle cx="12" cy="12" r="10" />
-                        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-                        <line x1="12" y1="17" x2="12.01" y2="17" />
-                      </svg>
-                      이런 질문들을 추천해드릴게요!
-                    </h3>
-                    <ul className="question-list">
-                      {parseResult.suggested_questions.map((q, i) => (
-                        <li key={i} className="question-item">"{q}"</li>
-                      ))}
-                    </ul>
+                {/* 에이전트의 추천 - 추천 질문 + 컨설턴트 조언 통합 */}
+                {(parseResult.suggested_questions?.length > 0 || parseResult.consultant_advice) && (
+                  <div className="result-card consultant-card">
+                    <div className="consultant-header">
+                      <h3 className="result-card-title">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                          <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                          <path d="M2 17l10 5 10-5" />
+                          <path d="M2 12l10 5 10-5" />
+                        </svg>
+                        에이전트의 추천
+                      </h3>
+                      <span className="consultant-badge">AI Consultant</span>
+                    </div>
+                    <div className="advice-content">
+                      {/* 추천 질문 */}
+                      {parseResult.suggested_questions?.length > 0 && (
+                        <div className="advice-section questions-section">
+                          <h4 className="advice-section-title">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                            </svg>
+                            추천 질문
+                          </h4>
+                          <ul className="insight-question-list">
+                            {parseResult.suggested_questions.map((q, i) => (
+                              <li key={i} className="insight-question-item">{q}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {/* 추천 구성 */}
+                      {parseResult.consultant_advice?.recommended_config && (
+                        <div className="advice-section">
+                          <h4 className="advice-section-title">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <rect x="3" y="3" width="7" height="7" />
+                              <rect x="14" y="3" width="7" height="7" />
+                              <rect x="14" y="14" width="7" height="7" />
+                              <rect x="3" y="14" width="7" height="7" />
+                            </svg>
+                            추천 구성
+                          </h4>
+                          <p className="advice-text">{parseResult.consultant_advice.recommended_config}</p>
+                        </div>
+                      )}
+                      {/* 업종 맞춤 옵션 */}
+                      {parseResult.consultant_advice?.industry_options && (
+                        <div className="advice-section">
+                          <h4 className="advice-section-title">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M2 20h20M5 20V10l7-7 7 7v10M9 20v-6h6v6" />
+                            </svg>
+                            업종 맞춤 옵션
+                          </h4>
+                          <p className="advice-text">{parseResult.consultant_advice.industry_options}</p>
+                        </div>
+                      )}
+                      {/* 예산 검토 */}
+                      {parseResult.consultant_advice?.budget_review && (
+                        <div className="advice-section">
+                          <h4 className="advice-section-title">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <line x1="12" y1="1" x2="12" y2="23" />
+                              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                            </svg>
+                            예산 검토
+                          </h4>
+                          <p className="advice-text">{parseResult.consultant_advice.budget_review}</p>
+                        </div>
+                      )}
+                      {/* 주의사항 */}
+                      {parseResult.consultant_advice?.warnings && (
+                        <div className="advice-section warning-section">
+                          <h4 className="advice-section-title">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                              <line x1="12" y1="9" x2="12" y2="13" />
+                              <line x1="12" y1="17" x2="12.01" y2="17" />
+                            </svg>
+                            주의사항
+                          </h4>
+                          <p className="advice-text">{parseResult.consultant_advice.warnings}</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
 
                 {/* 완료 상태 표시 */}
                 {parseResult.is_complete && (
                   <div className="complete-badge">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                      <polyline points="22 4 12 14.01 9 11.01" />
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M9 12l2 2 4-4" />
+                      <path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" />
                     </svg>
-                    필수 정보 취합 완료!
+                    필수 정보 취합 완료
                   </div>
                 )}
               </div>
@@ -368,7 +434,7 @@ function ConsultationNoteModal({
                         <polyline points="17 21 17 13 7 13 7 21" />
                         <polyline points="7 3 7 8 15 8" />
                       </svg>
-                      저장 및 적용
+                      저장
                     </>
                   )}
                 </button>

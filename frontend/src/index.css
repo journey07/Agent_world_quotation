@@ -2526,6 +2526,16 @@ select:focus {
   }
 }
 
+/* 견적 재계산 스피너 */
+.recalc-spinner {
+  display: inline-block;
+  animation: spin 1s linear infinite;
+  font-size: 14px;
+  margin-left: 8px;
+  color: #666;
+  vertical-align: middle;
+}
+
 @keyframes pulse {
 
   0%,
