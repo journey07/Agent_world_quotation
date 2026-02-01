@@ -14,23 +14,42 @@ function Root() {
     const savedUser = localStorage.getItem('user')
     if (savedUser) {
       try {
+        // 세션 만료 체크 (매일 00시 KST 자동 로그아웃)
+        const sessionExpiry = localStorage.getItem('sessionExpiry')
+        if (sessionExpiry && Date.now() > parseInt(sessionExpiry)) {
+          // 만료됨 - 자동 로그아웃
+          console.log('🔒 세션 만료 - 자동 로그아웃')
+          localStorage.removeItem('user')
+          localStorage.removeItem('userId')
+          localStorage.removeItem('sessionExpiry')
+          setLoading(false)
+          return
+        }
         setUser(JSON.parse(savedUser))
       } catch (err) {
         console.error('Failed to parse user data:', err)
         localStorage.removeItem('user')
         localStorage.removeItem('userId')
+        localStorage.removeItem('sessionExpiry')
       }
     }
     setLoading(false)
   }, [])
 
   const handleLoginSuccess = (userData) => {
+    // 다음 날 00시(KST) 만료 시간 계산 및 저장
+    const tomorrow = new Date()
+    tomorrow.setHours(24, 0, 0, 0) // 다음 날 00:00:00
+    localStorage.setItem('sessionExpiry', tomorrow.getTime().toString())
+    console.log('🔐 세션 만료 시간 설정:', tomorrow.toLocaleString('ko-KR'))
+
     setUser(userData)
   }
 
   const handleLogout = () => {
     localStorage.removeItem('user')
     localStorage.removeItem('userId')
+    localStorage.removeItem('sessionExpiry')
     setUser(null)
   }
 
