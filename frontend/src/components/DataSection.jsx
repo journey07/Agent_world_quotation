@@ -13,6 +13,7 @@ function DataSection({ inquiries, onApplyInquiry, onSaveInquiry, apiUrl, getHead
     const [selectedInquiry, setSelectedInquiry] = useState(null);
     const [openStatusDropdown, setOpenStatusDropdown] = useState(null);
     const [updatingStatus, setUpdatingStatus] = useState(null);
+    const [successStatus, setSuccessStatus] = useState(null); // 성공 피드백용
     const dropdownRef = useRef(null);
 
     // 드롭다운 외부 클릭 시 닫기
@@ -88,6 +89,10 @@ function DataSection({ inquiries, onApplyInquiry, onSaveInquiry, apiUrl, getHead
 
             const result = await response.json();
             onSaveInquiry(result.inquiry);
+
+            // 성공 피드백 표시
+            setSuccessStatus(item.id);
+            setTimeout(() => setSuccessStatus(null), 1500);
         } catch (err) {
             console.error('Status update error:', err);
         } finally {
@@ -134,6 +139,7 @@ function DataSection({ inquiries, onApplyInquiry, onSaveInquiry, apiUrl, getHead
                                 const statusInfo = getStatusInfo(item.status);
                                 const isDropdownOpen = openStatusDropdown === item.id;
                                 const isUpdating = updatingStatus === item.id;
+                                const isSuccess = successStatus === item.id;
 
                                 return (
                                     <tr
@@ -165,7 +171,7 @@ function DataSection({ inquiries, onApplyInquiry, onSaveInquiry, apiUrl, getHead
                                                 ref={isDropdownOpen ? dropdownRef : null}
                                             >
                                                 <button
-                                                    className={`status-badge ${isUpdating ? 'updating' : ''}`}
+                                                    className={`status-badge ${isUpdating ? 'updating' : ''} ${isSuccess ? 'success' : ''}`}
                                                     style={{
                                                         '--status-color': statusInfo.color,
                                                         '--status-bg': statusInfo.bgColor
@@ -173,7 +179,13 @@ function DataSection({ inquiries, onApplyInquiry, onSaveInquiry, apiUrl, getHead
                                                     onClick={(e) => handleStatusClick(e, item.id)}
                                                     disabled={isUpdating}
                                                 >
-                                                    <span className="status-dot" />
+                                                    {isSuccess ? (
+                                                        <svg className="success-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="3">
+                                                            <polyline points="20 6 9 17 4 12" />
+                                                        </svg>
+                                                    ) : (
+                                                        <span className="status-dot" />
+                                                    )}
                                                     <span className="status-label">{statusInfo.label}</span>
                                                     <svg className="status-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                                         <polyline points="6 9 12 15 18 9" />

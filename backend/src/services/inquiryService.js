@@ -157,11 +157,44 @@ export async function updateInquiry(id, updateData) {
         throw new Error(`Failed to update inquiry: ${error.message}`);
     }
 
-    // 기존 형식으로 반환
+    // 기존 형식으로 반환 (getAllInquiries와 동일한 형식)
     return {
         id: data.id,
         timestamp: data.created_at,
-        ...updateData,
+        status: data.status,
+        columns: data.columns,
+        tiers: data.rows,
+        quantity: data.raw_data?.quantity || 1,
+        controlPanelColumn: data.raw_data?.controlPanelColumn,
+        controlPanelTiers: data.raw_data?.controlPanelTiers,
+        tierConfig: data.raw_data?.tierConfig,
+        options: {
+            dualController: data.control_type === 'dual',
+            acrylic: data.door_type === 'acrylic',
+            perforation: data.raw_data?.options?.perforation,
+            frameType: data.raw_data?.options?.frameType,
+            lockerColor: data.color,
+            customColor: data.raw_data?.options?.customColor,
+            handle: data.handle,
+        },
+        region: data.raw_data?.region,
+        installationBackground: data.raw_data?.installationBackground,
+        companyName: data.customer_company,
+        contact: data.customer_contact,
+        email: data.customer_email,
+        detailedLocation: data.raw_data?.detailedLocation,
+        contactName: data.customer_name,
+        industry: data.raw_data?.industry,
+        installationDate: data.raw_data?.installationDate,
+        budget: data.raw_data?.budget,
+        total_lockers: data.raw_data?.total_lockers,
+        rawNote: data.notes,
+        summary: {
+            subtotal: data.total_price,
+            quantity: data.raw_data?.quantity || 1,
+            total: data.final_price,
+        },
+        createdBy: data.raw_data?.createdBy,
         updatedAt: data.updated_at,
     };
 }

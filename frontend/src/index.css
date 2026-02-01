@@ -1214,6 +1214,29 @@ h1 {
   50% { opacity: 0.4; }
 }
 
+/* 상태 변경 성공 피드백 */
+.status-badge.success {
+  animation: successFlash 0.4s ease-out;
+  border-color: #10b981;
+  background: rgba(16, 185, 129, 0.15);
+}
+
+.status-badge .success-check {
+  animation: checkPop 0.3s ease-out;
+}
+
+@keyframes successFlash {
+  0% { transform: scale(1); }
+  30% { transform: scale(1.05); background: rgba(16, 185, 129, 0.25); }
+  100% { transform: scale(1); }
+}
+
+@keyframes checkPop {
+  0% { transform: scale(0); opacity: 0; }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
 .status-dot {
   width: 6px;
   height: 6px;
