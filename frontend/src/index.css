@@ -3019,10 +3019,11 @@ label.color-btn {
   cursor: pointer;
   border-radius: 4px;
   transition: background 0.15s ease;
+  background: #ede9fe;  /* 연보라 - 디폴트 */
 }
 
 .tier-stepper-value.clickable:hover {
-  background: #f1f5f9;
+  background: #c4b5fd;  /* 보라색 - 호버 */
 }
 
 .tier-stepper-value.non-uniform {
