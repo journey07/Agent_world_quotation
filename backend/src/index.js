@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import quoteRoutes from './routes/quote.js';
 import authRoutes from './routes/auth.js';
+import inquiryRoutes from './routes/inquiry.js';
 import { startHeartbeat } from './services/statsService.js';
 import { extractUserMiddleware } from './utils/userMiddleware.js';
 
@@ -78,6 +79,8 @@ app.use((req, res, next) => {
 // Routes
 app.use('/api/quote', quoteRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/inquiry', inquiryRoutes);
+app.use('/inquiries', inquiryRoutes); // 프론트엔드 호환성
 
 // For backward compatibility with top-level paths (e.g., /calculate instead of /api/quote/calculate)
 app.use('/', quoteRoutes);

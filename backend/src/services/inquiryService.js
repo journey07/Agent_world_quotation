@@ -1,104 +1,189 @@
-import fs from 'fs/promises';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import { createClient } from '@supabase/supabase-js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const supabaseUrl = process.env.SUPABASE_URL || 'https://gxkwhbwklvwhqehwpfpt.supabase.co';
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
 
-const DATA_DIR = path.join(__dirname, '../../data');
-const DATA_FILE = path.join(DATA_DIR, 'inquiries.json');
-
-/**
- * Ensure data directory and file exist
- */
-async function ensureDataFile() {
-    try {
-        await fs.access(DATA_DIR);
-    } catch {
-        await fs.mkdir(DATA_DIR, { recursive: true });
-    }
-
-    try {
-        await fs.access(DATA_FILE);
-    } catch {
-        await fs.writeFile(DATA_FILE, JSON.stringify([], null, 2));
-    }
+if (!supabaseServiceKey) {
+  throw new Error('Supabase key is required. Please set SUPABASE_SERVICE_ROLE_KEY or SUPABASE_ANON_KEY in .env file');
 }
 
+// Service role key를 사용하여 RLS를 우회하고 직접 테이블에 접근
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
 /**
- * Save a new inquiry to the JSON file
+ * Save a new inquiry to Supabase
  */
 export async function saveInquiry(inquiryData) {
-    await ensureDataFile();
-
-    const fileContent = await fs.readFile(DATA_FILE, 'utf-8');
-    const inquiries = JSON.parse(fileContent);
-
     const newInquiry = {
-        id: Date.now(),
-        timestamp: new Date().toISOString(),
         status: 'inquiry', // 기본 상태: 문의/견적중
-        ...inquiryData
+        customer_name: inquiryData.contactName || inquiryData.companyName,
+        customer_contact: inquiryData.contact,
+        customer_email: inquiryData.email,
+        customer_company: inquiryData.companyName,
+        columns: inquiryData.columns,
+        rows: inquiryData.tiers,
+        material: inquiryData.options?.material,
+        color: inquiryData.options?.lockerColor || inquiryData.options?.customColor,
+        handle: inquiryData.options?.handle || false,
+        control_type: inquiryData.options?.dualController ? 'dual' : 'single',
+        compartment_config: inquiryData.tierConfig?.type,
+        door_type: inquiryData.options?.acrylic ? 'acrylic' : 'standard',
+        total_price: inquiryData.summary?.subtotal,
+        final_price: inquiryData.summary?.total,
+        notes: inquiryData.rawNote,
+        raw_data: inquiryData,
     };
 
-    inquiries.unshift(newInquiry); // Add to the beginning
+    const { data, error } = await supabase
+        .from('inquiries')
+        .insert([newInquiry])
+        .select()
+        .single();
 
-    await fs.writeFile(DATA_FILE, JSON.stringify(inquiries, null, 2));
-    return newInquiry;
+    if (error) {
+        throw new Error(`Failed to save inquiry: ${error.message}`);
+    }
+
+    // 기존 형식으로 반환 (호환성)
+    return {
+        id: data.id,
+        timestamp: data.created_at,
+        status: data.status,
+        ...inquiryData
+    };
 }
 
 /**
- * Get all inquiries from the JSON file
+ * Get all inquiries from Supabase
  */
 export async function getAllInquiries() {
-    await ensureDataFile();
+    const { data, error } = await supabase
+        .from('inquiries')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-    const fileContent = await fs.readFile(DATA_FILE, 'utf-8');
-    return JSON.parse(fileContent);
+    if (error) {
+        throw new Error(`Failed to get inquiries: ${error.message}`);
+    }
+
+    // 기존 형식으로 변환 (호환성)
+    return data.map(item => ({
+        id: item.id,
+        timestamp: item.created_at,
+        status: item.status,
+        columns: item.columns,
+        tiers: item.rows,
+        quantity: item.raw_data?.quantity || 1,
+        controlPanelColumn: item.raw_data?.controlPanelColumn,
+        controlPanelTiers: item.raw_data?.controlPanelTiers,
+        tierConfig: item.raw_data?.tierConfig,
+        options: {
+            dualController: item.control_type === 'dual',
+            acrylic: item.door_type === 'acrylic',
+            perforation: item.raw_data?.options?.perforation,
+            frameType: item.raw_data?.options?.frameType,
+            lockerColor: item.color,
+            customColor: item.raw_data?.options?.customColor,
+            handle: item.handle,
+        },
+        region: item.raw_data?.region,
+        installationBackground: item.raw_data?.installationBackground,
+        companyName: item.customer_company,
+        contact: item.customer_contact,
+        email: item.customer_email,
+        detailedLocation: item.raw_data?.detailedLocation,
+        contactName: item.customer_name,
+        industry: item.raw_data?.industry,
+        installationDate: item.raw_data?.installationDate,
+        budget: item.raw_data?.budget,
+        total_lockers: item.raw_data?.total_lockers,
+        rawNote: item.notes,
+        summary: {
+            subtotal: item.total_price,
+            quantity: item.raw_data?.quantity || 1,
+            total: item.final_price,
+        },
+        createdBy: item.raw_data?.createdBy,
+        updatedAt: item.updated_at,
+    }));
 }
 
 /**
  * Update an existing inquiry by ID
  */
 export async function updateInquiry(id, updateData) {
-    await ensureDataFile();
-
-    const fileContent = await fs.readFile(DATA_FILE, 'utf-8');
-    const inquiries = JSON.parse(fileContent);
-
-    const index = inquiries.findIndex(item => item.id === id);
-    if (index === -1) {
-        throw new Error('Inquiry not found');
-    }
-
-    // 기존 데이터 유지하면서 업데이트
-    inquiries[index] = {
-        ...inquiries[index],
-        ...updateData,
-        id: inquiries[index].id, // ID는 변경 불가
-        timestamp: inquiries[index].timestamp, // 생성 시각 유지
-        updatedAt: new Date().toISOString()
+    const updatePayload = {
+        updated_at: new Date().toISOString(),
     };
 
-    await fs.writeFile(DATA_FILE, JSON.stringify(inquiries, null, 2));
-    return inquiries[index];
+    // 필드별 매핑
+    if (updateData.status) updatePayload.status = updateData.status;
+    if (updateData.contactName) updatePayload.customer_name = updateData.contactName;
+    if (updateData.contact) updatePayload.customer_contact = updateData.contact;
+    if (updateData.email) updatePayload.customer_email = updateData.email;
+    if (updateData.companyName) updatePayload.customer_company = updateData.companyName;
+    if (updateData.columns) updatePayload.columns = updateData.columns;
+    if (updateData.tiers) updatePayload.rows = updateData.tiers;
+    if (updateData.options?.lockerColor) updatePayload.color = updateData.options.lockerColor;
+    if (updateData.options?.handle !== undefined) updatePayload.handle = updateData.options.handle;
+    if (updateData.rawNote) updatePayload.notes = updateData.rawNote;
+    if (updateData.summary?.subtotal) updatePayload.total_price = updateData.summary.subtotal;
+    if (updateData.summary?.total) updatePayload.final_price = updateData.summary.total;
+
+    // raw_data 필드 전체 업데이트
+    const { data: existing, error: fetchError } = await supabase
+        .from('inquiries')
+        .select('raw_data')
+        .eq('id', id)
+        .single();
+
+    if (fetchError) {
+        throw new Error(`Inquiry not found: ${fetchError.message}`);
+    }
+
+    updatePayload.raw_data = {
+        ...existing.raw_data,
+        ...updateData,
+    };
+
+    const { data, error } = await supabase
+        .from('inquiries')
+        .update(updatePayload)
+        .eq('id', id)
+        .select()
+        .single();
+
+    if (error) {
+        throw new Error(`Failed to update inquiry: ${error.message}`);
+    }
+
+    // 기존 형식으로 반환
+    return {
+        id: data.id,
+        timestamp: data.created_at,
+        ...updateData,
+        updatedAt: data.updated_at,
+    };
 }
 
 /**
  * Delete an inquiry by ID
  */
 export async function deleteInquiry(id) {
-    await ensureDataFile();
+    const { data, error } = await supabase
+        .from('inquiries')
+        .delete()
+        .eq('id', id)
+        .select()
+        .single();
 
-    const fileContent = await fs.readFile(DATA_FILE, 'utf-8');
-    const inquiries = JSON.parse(fileContent);
-
-    const index = inquiries.findIndex(item => item.id === id);
-    if (index === -1) {
-        throw new Error('Inquiry not found');
+    if (error) {
+        throw new Error(`Failed to delete inquiry: ${error.message}`);
     }
 
-    const deleted = inquiries.splice(index, 1)[0];
-    await fs.writeFile(DATA_FILE, JSON.stringify(inquiries, null, 2));
-    return deleted;
+    return {
+        id: data.id,
+        timestamp: data.created_at,
+        ...data.raw_data,
+    };
 }
