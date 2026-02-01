@@ -1663,6 +1663,22 @@ h1 {
   box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
 }
 
+/* 저장 성공 버튼 스타일 */
+.inquiry-detail-modal .btn-primary.btn-success {
+  background: #10b981;
+  animation: btnSuccessFlash 0.4s ease-out;
+}
+
+.inquiry-detail-modal .btn-primary.btn-success .check-icon {
+  animation: checkPop 0.3s ease-out;
+}
+
+@keyframes btnSuccessFlash {
+  0% { transform: scale(1); }
+  30% { transform: scale(1.05); background: #059669; }
+  100% { transform: scale(1); }
+}
+
 .inquiry-detail-modal .close-btn {
   display: flex;
   align-items: center;

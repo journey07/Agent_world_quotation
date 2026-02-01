@@ -12,6 +12,7 @@ function InquiryDetailModal({ inquiry, onClose, onSave, onApply, apiUrl, getHead
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState({});
     const [isSaving, setIsSaving] = useState(false);
+    const [saveSuccess, setSaveSuccess] = useState(false);
     const [error, setError] = useState(null);
 
     // inquiry가 변경되면 formData 초기화
@@ -132,7 +133,13 @@ function InquiryDetailModal({ inquiry, onClose, onSave, onApply, apiUrl, getHead
 
             const result = await response.json();
             onSave(result.inquiry);
-            setIsEditing(false);
+
+            // 성공 피드백 표시
+            setSaveSuccess(true);
+            setTimeout(() => {
+                setSaveSuccess(false);
+                setIsEditing(false);
+            }, 1000);
         } catch (err) {
             console.error('Save error:', err);
             setError(err.message || '저장 중 오류가 발생했습니다.');
@@ -205,11 +212,22 @@ function InquiryDetailModal({ inquiry, onClose, onSave, onApply, apiUrl, getHead
                     <div className="header-actions">
                         {isEditing ? (
                             <>
-                                <button className="btn-secondary btn-sm" onClick={handleCancel} disabled={isSaving}>
+                                <button className="btn-secondary btn-sm" onClick={handleCancel} disabled={isSaving || saveSuccess}>
                                     취소
                                 </button>
-                                <button className="btn-primary btn-sm" onClick={handleSave} disabled={isSaving}>
-                                    {isSaving ? '저장 중...' : '저장'}
+                                <button
+                                    className={`btn-primary btn-sm ${saveSuccess ? 'btn-success' : ''}`}
+                                    onClick={handleSave}
+                                    disabled={isSaving || saveSuccess}
+                                >
+                                    {saveSuccess ? (
+                                        <>
+                                            <svg className="check-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                                                <polyline points="20 6 9 17 4 12" />
+                                            </svg>
+                                            완료
+                                        </>
+                                    ) : isSaving ? '저장 중...' : '저장'}
                                 </button>
                             </>
                         ) : (
