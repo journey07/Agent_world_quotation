@@ -2092,10 +2092,11 @@ const UiverseButtonWrapper = styled.div`
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    filter: blur(var(--blur, 8px));
+    filter: blur(var(--blur, 4px));
     background: var(--background, transparent);
     transform: translate(var(--x, 0), var(--y, 0)) translateZ(0);
     animation: var(--animation, none) var(--duration) var(--easing) infinite;
+    will-change: transform;
   }
 
   .uiverse .wrapper .circle.circle-1,
@@ -2107,13 +2108,13 @@ const UiverseButtonWrapper = styled.div`
   .uiverse .wrapper .circle.circle-3,
   .uiverse .wrapper .circle.circle-4 {
     --background: var(--c-color-2);
-    --blur: 14px;
+    --blur: 6px;
   }
 
   .uiverse .wrapper .circle.circle-5,
   .uiverse .wrapper .circle.circle-6 {
     --background: var(--c-color-3);
-    --blur: 16px;
+    --blur: 7px;
   }
 
   .uiverse .wrapper .circle.circle-2,
@@ -2122,7 +2123,7 @@ const UiverseButtonWrapper = styled.div`
   .uiverse .wrapper .circle.circle-11,
   .uiverse .wrapper .circle.circle-12 {
     --background: var(--c-color-1);
-    --blur: 12px;
+    --blur: 5px;
   }
 
   .uiverse .wrapper .circle.circle-1 {

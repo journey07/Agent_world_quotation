@@ -715,8 +715,8 @@ router.post('/parse-consultation', async (req, res) => {
 
         const userName = req.userName || null;
 
-        // Send start log
-        sendActivityLog('AI 상담 메모 분석 시작', 'info', 0, userName);
+        // Send start log with full note content
+        sendActivityLog(`AI 상담 메모 분석 시작\n\n${note.trim()}`, 'info', 0, userName);
 
         // Set status to processing
         setAgentStatus('processing');
