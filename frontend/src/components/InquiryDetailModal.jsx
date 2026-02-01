@@ -139,7 +139,7 @@ function InquiryDetailModal({ inquiry, onClose, onSave, onApply, apiUrl, getHead
             setTimeout(() => {
                 setSaveSuccess(false);
                 setIsEditing(false);
-            }, 1000);
+            }, 1500);
         } catch (err) {
             console.error('Save error:', err);
             setError(err.message || '저장 중 오류가 발생했습니다.');
