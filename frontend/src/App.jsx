@@ -1929,10 +1929,22 @@ function App({ user, onLogout }) {
                       style={{ margin: 0, flex: 1 }}
                       onClick={() => {
                         setShowThreeDWarning(false);
-                        setViewMode('2d');
-                        // Scroll to 3D generation section
-                        const genBtn = document.querySelector('.uiverse');
-                        if (genBtn) genBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                        // previewImage 확인 (stateRef 사용하여 최신 상태 반영)
+                        const currentPreviewImage = stateRef.current.previewImage || previewImage;
+
+                        if (currentPreviewImage) {
+                          // 2D 이미지가 있으면 3D 생성 함수 호출
+                          handleGenerate3D();
+                        } else {
+                          // 2D 이미지가 없으면 2D 생성 섹션으로 이동
+                          setViewMode('2d');
+                          // Scroll to 2D generation section
+                          const previewSection = document.querySelector('[id*="preview"]') || document.querySelector('.preview-section');
+                          if (previewSection) {
+                            previewSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                          }
+                        }
                       }}
                     >
                       3D 이미지 생성

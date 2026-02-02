@@ -113,7 +113,26 @@ npm run dev:frontend   # 프론트만 (localhost:5174)
 | `/gen-excel` | Excel 견적서 생성 | `/gen-excel` |
 | `/add-option` | 새 옵션 추가 가이드 | `/add-option 손잡이` |
 | `/db-check` | Supabase DB 확인 | `/db-check users` |
+| `/xlsx` | Excel 파일 생성/수정 (전역) | Excel 작업 시 자동 참조 |
 | `/ui-ux-pro-max` | UI/UX 디자인 가이드 | UI 작업 시 자동 참조 |
+
+### ⚠️ Excel 작업 필수 규칙 (CRITICAL)
+
+**Excel/XLSX 파일 작업 시 아무리 작은 변경이라도 반드시 `/xlsx` 스킬을 먼저 호출할 것.**
+
+적용 대상 (예외 없음):
+- Excel 견적서 레이아웃 변경
+- 가격 계산 로직 수정
+- 새로운 옵션 추가 (excelService.js)
+- 데이터 포맷팅 변경
+- 이미지 삽입/배치 수정
+
+필수 검증 항목:
+- ✅ **ZERO 수식 오류** (#REF!, #DIV/0!, #VALUE!, #N/A, #NAME?)
+- ✅ **수식 기반 계산** (값 하드코딩 금지)
+- ✅ **셀 참조 검증** (깨진 링크 없음)
+- ✅ **숫자 포맷팅** (통화, 백분율, 날짜)
+- ✅ **문서화** (모든 수동 입력값에 출처 기록)
 
 ### ⚠️ UI/UX 작업 필수 규칙 (CRITICAL)
 
@@ -305,6 +324,64 @@ VITE_API_3D_URL
 | Frontend | Vercel | agent-world-quotation.vercel.app |
 | Backend | Vercel | (API routes, ICN1 Seoul) |
 | Custom | - | wl-agent1.supersquad.kr |
+
+---
+
+## Notion 업무 체계
+
+### 전체 구조
+```
+12 Week Goals (장기 목표)
+    ↓
+Projects (클라이언트별 프로젝트)
+    ↓
+Tasks (세부 업무)
+
+Agent Hub (AI 에이전트 관리)
+```
+
+### 데이터베이스 관계
+
+| DB | 용도 | 주요 필드 |
+|----|------|----------|
+| **12주 목표** | 분기별 핵심 목표 관리 | 목표, 기간, 연결된 프로젝트 |
+| **Project** | 클라이언트 프로젝트 | Client, 계약일, Status, Payment, Progress |
+| **Task** | 프로젝트별 할일 | Name, Status, Type, Priority, Project(relation) |
+| **Account** | 호스팅/도메인/DB 정보 | Category, 호스팅, 도메인, DB, 기타 |
+| **Agent** | AI 에이전트 관리 | 에이전트별 상태, 설정 |
+| **클라이언트 미팅 기록** | 미팅 내용 기록 | - |
+| **개발 로그** | 개발 진행 기록 | - |
+
+### Project Status 흐름
+`기획` → `개발` → `피드백` → `추가수정` → `최종 검수` → `배포`
+
+### Task Status 흐름
+`Backlog` → `In progress` → `Deployed`
+
+### Task Type
+- 기능추가: 새로운 기능
+- 기능개선: 기존 기능 개선
+- 오류수정: 버그 픽스
+- 디자인: UI/UX 변경
+- 컨텐츠 수정: 텍스트/이미지 교체
+
+### Task Priority
+최상 > 상 > (미지정)
+
+### 현재 진행 중인 프로젝트
+| 클라이언트 | 프로젝트 | 상태 |
+|------------|----------|------|
+| 월드락커 | 견적 에이전트 (AX) | 피드백 |
+| 탑이앤씨코리아 | 웹사이트 리모델링 | 최종 검수 |
+| 만수금속 | 웹사이트 리모델링 | 추가수정 |
+| 새한환경기술 | 웹사이트 리모델링 | 추가수정 |
+| AHA산업 | 웹사이트 리모델링 | 기획 |
+| CNS | 웹사이트 리모델링 | 배포 완료 |
+
+### Agent Hub
+- URL: https://hub.supersquad.kr/
+- GitHub: https://github.com/journey07/Agent-Hub
+- 용도: AI Agent 상태 모니터링 및 관리 대시보드
 
 ---
 

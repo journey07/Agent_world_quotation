@@ -169,9 +169,12 @@ async function createCoverSheet(workbook, quoteData, imageBase64, customerInfo, 
             horizontalCentered: true, // 인쇄 시 가로 중앙 정렬
             margins: {
                 left: 0.3, right: 0.3,
-                top: 0.3, bottom: 0.3,
-                header: 0.2, footer: 0.2
+                top: 0.3, bottom: 0.5,
+                header: 0.2, footer: 0.3
             }
+        },
+        headerFooter: {
+            oddFooter: '&C&"맑은 고딕,Bold"&11&K1E3A5FWORLD LOCKER | 월드락커'
         }
     });
 
@@ -258,26 +261,28 @@ async function createCoverSheet(workbook, quoteData, imageBase64, customerInfo, 
     rowIndex += 2;
 
     // ===== SECTION 3: Product Info (제품명 + 수신자) =====
-    // 제품명
+    // 제품명 (세트 수 기반)
     sheet.mergeCells(`A${rowIndex}:H${rowIndex}`);
     const productCell = sheet.getCell(`A${rowIndex}`);
     const frameText = input.options?.frameText || '물품보관함';
-    productCell.value = `${frameText} ${input.columns}열 × ${input.tiers}단`;
+    const setCount = input.sets || 1;
+    productCell.value = `${frameText} ${setCount}세트`;
     productCell.font = { name: 'Malgun Gothic', size: 22, bold: true, color: { argb: 'FF333333' } };
     productCell.alignment = { horizontal: 'center', vertical: 'middle' };
     sheet.getRow(rowIndex).height = 40;
     rowIndex++;
 
-    // 수신자
+    // 수신자 (귀하 추가)
     sheet.mergeCells(`A${rowIndex}:H${rowIndex}`);
     const recipientCell = sheet.getCell(`A${rowIndex}`);
-    recipientCell.value = `수신: ${customerInfo.companyName || '귀하'}`;
+    const companyName = customerInfo.companyName || '';
+    recipientCell.value = `수신: ${companyName} 귀하`;
     recipientCell.font = { name: 'Malgun Gothic', size: 16, color: { argb: 'FF666666' } };
     recipientCell.alignment = { horizontal: 'center', vertical: 'middle' };
     sheet.getRow(rowIndex).height = 30;
     rowIndex += 2;
 
-    // ===== SECTION 4: 3D Image (캔버스 중앙 배치 방식) =====
+    // ===== SECTION 4: 3D Image (시트 중앙 정렬) =====
     if (imageBase64) {
         try {
             // 원본 이미지 로드
@@ -286,41 +291,42 @@ async function createCoverSheet(workbook, quoteData, imageBase64, customerInfo, 
             const imgWidth = image.bitmap.width;
             const imgHeight = image.bitmap.height;
 
-            // 캔버스 크기: 시트 전체 너비에 맞춤 (8열 * 약 75px = 600px)
-            const canvasWidth = 600;
-            // 이미지를 캔버스 너비의 85%로 리사이즈
-            const targetWidth = Math.floor(canvasWidth * 0.85);
+            // 시트 전체 너비 계산 (8열 × 13너비 × 7.5px/단위 ≈ 780px)
+            const sheetWidthPx = 8 * colWidth * 7.5;
+
+            // 이미지 크기: 시트 너비의 75%로 리사이즈
+            const targetWidth = Math.floor(sheetWidthPx * 0.75);
             const targetHeight = Math.floor(targetWidth * (imgHeight / imgWidth));
-            const canvasHeight = targetHeight;
 
             // 이미지 리사이즈
             image.resize(targetWidth, targetHeight);
 
-            // 흰색 캔버스 생성 후 이미지를 중앙에 배치
-            const canvas = new Jimp(canvasWidth, canvasHeight, 0xFFFFFFFF);
-            const xOffset = Math.floor((canvasWidth - targetWidth) / 2);
-            canvas.composite(image, xOffset, 0);
-
-            // 캔버스를 base64로 변환
-            const centeredImageBase64 = await canvas.getBase64Async(Jimp.MIME_PNG);
-            const base64Data = centeredImageBase64.replace(/^data:image\/png;base64,/, '');
+            // 이미지를 base64로 변환
+            const resizedImageBase64 = await image.getBase64Async(Jimp.MIME_PNG);
+            const base64Data = resizedImageBase64.replace(/^data:image\/png;base64,/, '');
 
             const imageId = workbook.addImage({
                 base64: base64Data,
                 extension: 'png',
             });
 
-            // col: 0부터 시작 (이미지 내부에서 이미 중앙 정렬됨)
+            // 시트 중앙에 배치: col 오프셋 계산
+            // 시트 너비 = 8열, 이미지 너비 = targetWidth px
+            // 엑셀 열 너비 1 = 약 7.5 픽셀 (ExcelJS 실제 렌더링 기준)
+            const pxPerCol = colWidth * 7.5;
+            const imageColSpan = targetWidth / pxPerCol; // 이미지가 차지하는 열 수
+            const startCol = (8 - imageColSpan) / 2; // 중앙 시작 열
+
             sheet.addImage(imageId, {
-                tl: { col: 0, row: rowIndex },
-                ext: { width: canvasWidth, height: canvasHeight }
+                tl: { col: startCol, row: rowIndex },
+                ext: { width: targetWidth, height: targetHeight }
             });
 
-            console.log('Cover 3D Image: canvas-centered, canvas:', canvasWidth, 'x', canvasHeight,
-                'image:', targetWidth, 'x', targetHeight, 'xOffset:', xOffset);
+            console.log('Cover 3D Image: centered at col', startCol.toFixed(2),
+                'size:', targetWidth, 'x', targetHeight);
 
             // 이미지 공간 확보
-            const imageRowSpan = Math.ceil(canvasHeight / 15);
+            const imageRowSpan = Math.ceil(targetHeight / 15);
             for (let i = rowIndex; i < rowIndex + imageRowSpan; i++) {
                 sheet.getRow(i).height = 18;
             }
@@ -328,17 +334,25 @@ async function createCoverSheet(workbook, quoteData, imageBase64, customerInfo, 
 
         } catch (err) {
             console.error('Error adding cover 3D image:', err);
-            // Fallback: 단순 삽입
+            // Fallback: 시트 중앙에 배치
             const imageId = workbook.addImage({
                 base64: imageBase64,
                 extension: 'png',
             });
+
+            // Fallback도 중앙 정렬 (이미지 너비 500px 가정)
+            const fallbackWidth = 500;
+            const fallbackHeight = 375;
+            const colWidthPx = colWidth * 7.5;
+            const fallbackColSpan = fallbackWidth / colWidthPx;
+            const startCol = (8 - fallbackColSpan) / 2;
+
             sheet.addImage(imageId, {
-                tl: { col: 0, row: rowIndex },
-                ext: { width: 600, height: 450 }
+                tl: { col: startCol, row: rowIndex },
+                ext: { width: fallbackWidth, height: fallbackHeight }
             });
 
-            const fallbackRowSpan = Math.ceil(450 / 15);
+            const fallbackRowSpan = Math.ceil(fallbackHeight / 15);
             for (let i = rowIndex; i < rowIndex + fallbackRowSpan; i++) {
                 sheet.getRow(i).height = 18;
             }
@@ -346,16 +360,7 @@ async function createCoverSheet(workbook, quoteData, imageBase64, customerInfo, 
         }
     }
 
-    // ===== SECTION 5: Footer (한 페이지 내에 배치) =====
-    // rowIndex++; // 추가 간격 제거
-
-    // Footer 텍스트
-    sheet.mergeCells(`A${rowIndex}:H${rowIndex}`);
-    const footerCell = sheet.getCell(`A${rowIndex}`);
-    footerCell.value = 'WORLD LOCKER | 월드락커';
-    footerCell.font = { name: 'Malgun Gothic', size: 11, color: { argb: 'FF1E3A5F' }, bold: true };
-    footerCell.alignment = { horizontal: 'center', vertical: 'middle' };
-    sheet.getRow(rowIndex).height = 25;
+    // Footer는 pageSetup.headerFooter로 고정 출력됨
 }
 
 /**
@@ -372,22 +377,25 @@ async function createDetailSheet(workbook, quoteData, previewImageBase64, custom
             horizontalCentered: true, // 인쇄 시 가로 중앙 정렬
             margins: {
                 left: 0.3, right: 0.3,
-                top: 0.3, bottom: 0.3,
-                header: 0.2, footer: 0.2
+                top: 0.3, bottom: 0.5,
+                header: 0.2, footer: 0.3
             }
+        },
+        headerFooter: {
+            oddFooter: '&C&"맑은 고딕,Bold"&11&K1E3A5FWORLD LOCKER | 월드락커'
         }
     });
 
     // Set column widths (8 columns - 정보박스 + 테이블 겸용)
     sheet.columns = [
-        { width: 14 },  // A (품명 / 좌측 라벨)
-        { width: 24 },  // B (사양 / 좌측 값)
-        { width: 8 },   // C (색상 / 빈 컬럼)
-        { width: 8 },   // D (단위 / 우측 시작)
-        { width: 8 },   // E (수량)
-        { width: 12 },  // F (단가)
-        { width: 14 },  // G (금액)
-        { width: 16 },  // H (비고)
+        { width: 14 },    // A (품명 / 좌측 라벨)
+        { width: 26.4 },  // B (사양 / 좌측 값) - 10% 증가
+        { width: 8 },     // C (색상 / 빈 컬럼)
+        { width: 8 },     // D (단위 / 우측 시작)
+        { width: 8 },     // E (수량)
+        { width: 12 },    // F (단가)
+        { width: 14 },    // G (금액)
+        { width: 16 },    // H (비고)
     ];
 
     const { input, breakdown } = quoteData;
@@ -437,7 +445,7 @@ async function createDetailSheet(workbook, quoteData, previewImageBase64, custom
         { label: '', value: '대표이사 권 필 목', size: 10 },
         { label: '', value: '인천광역시 남동구 은봉로 52', size: 9 },
         { label: '', value: 'TEL: 032-819-2750 / FAX: 032-819-2759', size: 9 },
-        { label: '', value: '기술영업부 이준원 (010-8930-2759)', size: 9 }
+        { label: '', value: '기술영업부 권인전 (010-8930-2759)', size: 9 }
     ];
 
     // 테두리 스타일 (얇은 실선)
@@ -780,9 +788,9 @@ async function createDetailSheet(workbook, quoteData, previewImageBase64, custom
         remarkCell.alignment = { horizontal: 'left', vertical: 'middle', wrapText: true };
         remarkCell.border = tableBorder;
 
-        // Adjust row height based on content
+        // Adjust row height based on content (여유있게 설정)
         const specLines = item.spec.split('\n').length;
-        const minHeight = Math.max(30, specLines * 12);
+        const minHeight = Math.max(42, specLines * 16); // 기본 42, 줄당 16pt로 증가
         sheet.getRow(rowIndex).height = minHeight;
 
         rowIndex++;
@@ -879,9 +887,9 @@ async function createDetailSheet(workbook, quoteData, previewImageBase64, custom
             // D-H열 너비 계산 (5개 컬럼)
             // D=8, E=8, F=12, G=14, H=16 = 총 58
             const availableWidth = (8 + 8 + 12 + 14 + 16) * 7.2; // 약 417.6pt
-            const maxImageHeight = 220; // 최대 높이 제한 (1페이지 내 유지)
+            const maxImageHeight = 286; // 최대 높이 제한 (30% 증가: 220 * 1.3)
 
-            let targetWidth = availableWidth * 0.95;
+            let targetWidth = availableWidth * 1.235; // 30% 증가 (0.95 * 1.3)
             let targetHeight = targetWidth / aspectRatio;
 
             // 높이가 최대값 초과 시 축소
@@ -921,14 +929,7 @@ async function createDetailSheet(workbook, quoteData, previewImageBase64, custom
     }
     rowIndex = Math.max(rowIndex, conditionStartRow + imageRowSpan) + 1;
 
-    // ===== SECTION 10: Footer (Cover 시트와 동일한 스타일) =====
-    // Footer 텍스트
-    sheet.mergeCells(`A${rowIndex}:H${rowIndex}`);
-    const footerCell = sheet.getCell(`A${rowIndex}`);
-    footerCell.value = 'WORLD LOCKER | 월드락커';
-    footerCell.font = { name: 'Malgun Gothic', size: 11, color: { argb: 'FF1E3A5F' }, bold: true };
-    footerCell.alignment = { horizontal: 'center', vertical: 'middle' };
-    sheet.getRow(rowIndex).height = 25;
+    // Footer는 pageSetup.headerFooter로 고정 출력됨
 }
 
 /**
