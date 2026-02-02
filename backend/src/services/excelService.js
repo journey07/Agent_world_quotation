@@ -730,7 +730,7 @@ async function createDetailSheet(workbook, quoteData, previewImageBase64, custom
                 qty = 1;
                 remark = '- 설치비 포함';
             } else if (opt.name.includes('듀얼')) {
-                spec = '▸ 2개의 독립 제어\n▸ 동시 운영 가능';
+                spec = '▸ 비상시, 문을 열 수 있는 기능';
                 unit = 'SET';
                 qty = 1;
             } else if (opt.name.includes('아크릴')) {
