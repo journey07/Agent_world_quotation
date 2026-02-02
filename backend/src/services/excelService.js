@@ -638,7 +638,7 @@ async function createDetailSheet(workbook, quoteData, previewImageBase64, custom
     const controlSpec = [
         '▸ W500mm × D500mm × H1920mm',
         '▸ 웹 연동방식 산업용 PC',
-        '▸ 카드 리더기 포함'
+        '▸ 음성안내시스템, 웹카메라 포함'
     ].join('\n');
 
     priceItems.push({
@@ -648,28 +648,39 @@ async function createDetailSheet(workbook, quoteData, previewImageBase64, custom
         qty: 1,
         unitPrice: breakdown.basePrice,
         amount: breakdown.basePrice,
-        remark: '산업용 PC',
+        remark: '- Embedded PC, Windows 10,\n 터치스크린',
         isControlItem: true // 제어부 마킹
     });
 
-    // 2. Locker Body (본체부) - 단수별 그룹화
+    // 2. Locker Body (함체부) - 단수별 그룹화
+    // 손잡이 포함 시 LED 정보 표시 + 도어락 정보
+    const hasHandle = input.options?.handle;
+    const handleRemark = hasHandle
+        ? '- 손잡이 LED내장\n(보관중 적색/미사용 청색)'
+        : '';
+    const doorLockRemark = '- 도어락: 자사특허\n스테인리스 스틸, 일괄관리';
+    const bodyRemark = hasHandle
+        ? `${handleRemark}\n${doorLockRemark}`
+        : doorLockRemark;
+
     if (breakdown.lockerBodiesBreakdown && breakdown.lockerBodiesBreakdown.length > 0) {
         // 단수별 분리 표시
         breakdown.lockerBodiesBreakdown.forEach((body) => {
             const bodySpec = [
                 `▸ W500mm × D500mm × H1920mm`,
-                `▸ 1열${body.tiers}단 (비균등)`,
-                '▸ 국산 고급형'
+                `▸ 1열${body.tiers}단`,
+                '▸ 외부: EGI 피막코팅 + 옥외용 분체도장',
+                '▸ 내부: GI재질 (녹/부식 방지)'
             ].join('\n');
 
             priceItems.push({
-                name: `본체부\n(1열${body.tiers}단형)`,
+                name: `함체부\n(1열${body.tiers}단형)`,
                 spec: bodySpec,
-                                unit: '열',
+                unit: '열',
                 qty: body.columns,
                 unitPrice: body.unitCost,
                 amount: body.totalCost,
-                remark: '냉연강판',
+                remark: bodyRemark,
                 isBodyItem: true // 함체부 마킹
             });
         });
@@ -677,18 +688,19 @@ async function createDetailSheet(workbook, quoteData, previewImageBase64, custom
         // 하위 호환: 기존 단일 항목 방식
         const bodySpec = [
             `▸ W500mm × D600mm × H${input.tiers * 480}mm`,
-            `▸ 1열${input.tiers}단 (비균등)`,
-            '▸ 국산 고급형'
+            `▸ 1열${input.tiers}단`,
+            '▸ 외부: EGI 피막코팅 + 옥외용 분체도장',
+            '▸ 내부: GI재질 (녹/부식 방지)'
         ].join('\n');
 
         priceItems.push({
-            name: '본체부\n(1열' + input.tiers + '단형)',
+            name: '함체부\n(1열' + input.tiers + '단형)',
             spec: bodySpec,
-                        unit: '열',
+            unit: '열',
             qty: breakdown.bodyColumns,
             unitPrice: breakdown.unitBodyCost,
             amount: breakdown.lockerBodyCost,
-            remark: '냉연강판',
+            remark: bodyRemark,
             isBodyItem: true
         });
     }
@@ -700,8 +712,7 @@ async function createDetailSheet(workbook, quoteData, previewImageBase64, custom
                 unit: 'SET',
         qty: 1,
         unitPrice: 0,
-        amount: 0,
-        remark: '제어부 포함'
+        amount: 0
     });
 
     // 4. Options
@@ -717,7 +728,7 @@ async function createDetailSheet(workbook, quoteData, previewImageBase64, custom
                 spec = '▸ 철제 프레임\n▸ 볼트 조립식';
                 unit = 'SET';
                 qty = 1;
-                remark = '설치비 포함';
+                remark = '- 설치비 포함';
             } else if (opt.name.includes('듀얼')) {
                 spec = '▸ 2개의 독립 제어\n▸ 동시 운영 가능';
                 unit = 'SET';
@@ -748,13 +759,13 @@ async function createDetailSheet(workbook, quoteData, previewImageBase64, custom
 
     // 5. Installation/Delivery
     priceItems.push({
-        name: '운반/설치\n/시운전',
+        name: '설치 및 운반\n&시운전',
         spec: `▸ 현장 운반 및 설치\n▸ 시운전 및 교육\n▸ ${breakdown.regionLabel}`,
         unit: 'SET',
         qty: 1,
         unitPrice: breakdown.installationCost,
         amount: breakdown.installationCost,
-        remark: '5톤 윙바디, 리프트차, 2인 설치',
+        remark: '- 5톤 윙바디, 리프트차, 2인 설치',
         isInstallItem: true // 설치 마킹
     });
 
@@ -767,6 +778,7 @@ async function createDetailSheet(workbook, quoteData, previewImageBase64, custom
     };
 
     // Write table data rows (색상 열 제거, 비고 G-H 병합)
+    const dataStartRow = rowIndex; // 데이터 시작 행 기록 (수식용)
     priceItems.forEach((item) => {
         // Name (A)
         const nameCell = sheet.getCell(`A${rowIndex}`);
@@ -804,9 +816,9 @@ async function createDetailSheet(workbook, quoteData, previewImageBase64, custom
         unitPriceCell.alignment = { horizontal: 'right', vertical: 'middle' };
         unitPriceCell.border = tableBorder;
 
-        // Total Price (F)
+        // Total Price (F) - 수식 적용: 수량 × 단가
         const amountCell = sheet.getCell(`F${rowIndex}`);
-        amountCell.value = item.amount;
+        amountCell.value = { formula: `D${rowIndex}*E${rowIndex}` };
         amountCell.numFmt = '#,##0';
         amountCell.font = { name: 'Malgun Gothic', size: 9, bold: true, color: { argb: 'FF1E3A5F' } };
         amountCell.alignment = { horizontal: 'right', vertical: 'middle' };
@@ -821,19 +833,31 @@ async function createDetailSheet(workbook, quoteData, previewImageBase64, custom
         remarkCell.border = tableBorder;
         sheet.getCell(`H${rowIndex}`).border = tableBorder;
 
-        // Adjust row height based on content
-        // 제어부, 함체부, 설치 항목은 높게, 나머지(옵션/프로그램)는 낮게
-        const specLines = item.spec.split('\n').length;
-        const isMainItem = item.isControlItem || item.isBodyItem || item.isInstallItem;
-        const minHeight = isMainItem
-            ? Math.max(38, specLines * 12) // 주요 항목: 기본 38pt
-            : Math.max(24, specLines * 10); // 옵션/프로그램: 기본 24pt
-        sheet.getRow(rowIndex).height = minHeight;
+        // Adjust row height based on content (텍스트 길이 + 자동 줄바꿈 고려)
+        // B열 너비 28 기준, 한글 9pt 폰트로 한 줄에 약 18자
+        const CHARS_PER_LINE = 18;
+        const LINE_HEIGHT = 14; // pt per line
+        const MIN_HEIGHT = 28;
+
+        // spec 텍스트의 실제 줄 수 계산 (명시적 줄바꿈 + 자동 wrap)
+        const specLines = item.spec.split('\n');
+        let totalLines = 0;
+        for (const line of specLines) {
+            // 각 줄이 wrap되는 횟수 계산
+            const wrappedLines = Math.ceil(line.length / CHARS_PER_LINE) || 1;
+            totalLines += wrappedLines;
+        }
+
+        const calculatedHeight = Math.max(MIN_HEIGHT, totalLines * LINE_HEIGHT);
+        sheet.getRow(rowIndex).height = calculatedHeight;
 
         rowIndex++;
     });
 
     // ===== SECTION 7: Total Row (깔끔한 디자인) =====
+    const dataEndRow = rowIndex - 1; // 데이터 마지막 행
+    const totalRowNum = rowIndex; // 합계 행 번호 저장 (11행 참조용)
+
     const totalBorder = {
         top: { style: 'medium', color: { argb: 'FF1E3A5F' } },
         left: { style: 'thin', color: { argb: 'FFE0E0E0' } },
@@ -841,7 +865,8 @@ async function createDetailSheet(workbook, quoteData, previewImageBase64, custom
         right: { style: 'thin', color: { argb: 'FFE0E0E0' } }
     };
 
-    sheet.mergeCells(`A${rowIndex}:F${rowIndex}`);
+    // A-E 병합 (합계 라벨)
+    sheet.mergeCells(`A${rowIndex}:E${rowIndex}`);
     const totalLabelCell = sheet.getCell(`A${rowIndex}`);
     totalLabelCell.value = '합    계';
     totalLabelCell.font = { name: 'Malgun Gothic', size: 11, bold: true, color: { argb: 'FF1E3A5F' } };
@@ -850,22 +875,38 @@ async function createDetailSheet(workbook, quoteData, previewImageBase64, custom
     totalLabelCell.border = totalBorder;
 
     // Apply borders to merged cells
-    ['B', 'C', 'D', 'E', 'F'].forEach(col => {
+    ['B', 'C', 'D', 'E'].forEach(col => {
         sheet.getCell(`${col}${rowIndex}`).border = totalBorder;
     });
 
-    sheet.mergeCells(`G${rowIndex}:H${rowIndex}`);
-    const totalValueCell = sheet.getCell(`G${rowIndex}`);
-    totalValueCell.value = totalAmount;
+    // F열: 합계 수식
+    const totalValueCell = sheet.getCell(`F${rowIndex}`);
+    totalValueCell.value = { formula: `SUM(F${dataStartRow}:F${dataEndRow})` };
     totalValueCell.numFmt = '#,##0';
     totalValueCell.font = { name: 'Malgun Gothic', size: 13, bold: true, color: { argb: 'FF1E3A5F' } };
     totalValueCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8F8F8' } };
     totalValueCell.alignment = { horizontal: 'right', vertical: 'middle' };
     totalValueCell.border = totalBorder;
+
+    // G-H 병합: *VAT별도
+    sheet.mergeCells(`G${rowIndex}:H${rowIndex}`);
+    const vatCell = sheet.getCell(`G${rowIndex}`);
+    vatCell.value = '*VAT별도';
+    vatCell.font = { name: 'Malgun Gothic', size: 9, color: { argb: 'FF888888' } };
+    vatCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8F8F8' } };
+    vatCell.alignment = { horizontal: 'center', vertical: 'middle' };
+    vatCell.border = totalBorder;
     sheet.getCell(`H${rowIndex}`).border = totalBorder;
 
     sheet.getRow(rowIndex).height = 32;
     rowIndex += 2;
+
+    // 11행 총 견적금액 수식 업데이트 (VAT 포함 = 합계 × 1.1)
+    // [DBNum4] 서식으로 숫자를 한글로 변환
+    const totalAmountDisplayRow = infoStartRow + 6;
+    sheet.getCell(`A${totalAmountDisplayRow}`).value = {
+        formula: `"총 견적금액:  일금 "&TEXT(F${totalRowNum}*1.1,"[DBNum4]G/표준")&"원정 (₩"&TEXT(F${totalRowNum}*1.1,"#,##0")&"원)  [VAT 포함]"`
+    };
 
     // ===== SECTION 8: Condition + 2D Layout (나란히 배치) =====
     const sectionStartRow = rowIndex;
@@ -893,8 +934,10 @@ async function createDetailSheet(workbook, quoteData, previewImageBase64, custom
     // --- 좌측: Condition 내용 ---
     const conditions = [
         '1. 납품기간은 발주 후 4주',
-        '2. 무상유지보수 기간 1년',
-        '3. 전기 및 통신 공사는 제외'
+        '2. 원격제어시스템 웹서버 제공 (1년 무상)',
+        '3. 무상유지보수 기간 : 최초 1년',
+        '4. 전기 및 통신 공사는 제외'
+        
     ];
 
     const conditionStartRow = rowIndex;
@@ -926,9 +969,9 @@ async function createDetailSheet(workbook, quoteData, previewImageBase64, custom
             const availableWidth = (8 + 8 + 12 + 14 + 16) * 7.2; // 약 417.6pt
 
             // 항목 수에 따라 이미지 크기 동적 조절
-            // 기본 항목: 제어부(1) + 본체부(1~n) + 프로그램(1) + 설치(1) = 4+
+            // 기본 항목: 제어부(1) + 함체부(1~n) + 프로그램(1) + 설치(1) = 4+
             // 옵션 항목 추가 시 이미지 축소
-            const baseItems = 4; // 제어부, 본체부(최소1), 프로그램, 설치
+            const baseItems = 4; // 제어부, 함체부(최소1), 프로그램, 설치
             const extraItems = Math.max(0, priceItems.length - baseItems);
 
             // 항목이 많을수록 이미지 최대 높이 축소
