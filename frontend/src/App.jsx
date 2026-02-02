@@ -160,7 +160,8 @@ function App({ user, onLogout }) {
       result,
       previewImage,
       generatedImage,
-      error
+      error,
+      formData
     };
   }, [loading, generating3D, result, previewImage, generatedImage, error, formData]);
 
@@ -403,9 +404,11 @@ function App({ user, onLogout }) {
     }
 
     // Sync detailed location with installation background for 3D generation
+    // stateRef를 통해 최신 formData 확인
+    const currentFormData = stateRef.current.formData || formData;
     const updatedFormData = {
-      ...formData,
-      installationBackground: formData.detailedLocation || formData.installationBackground
+      ...currentFormData,
+      installationBackground: currentFormData.detailedLocation || currentFormData.installationBackground
     };
     setFormData(updatedFormData);
 
@@ -424,26 +427,26 @@ function App({ user, onLogout }) {
       const calcData = await calcRes.json();
       setResult(calcData);
 
-      // Get preview image with frame overlay
+      // Get preview image with frame overlay (updatedFormData 사용으로 일관성 유지)
       const imgRes = await fetch(`${API_URL}/preview-image`, {
         method: 'POST',
         headers: getHeadersWithUser(user),
         body: JSON.stringify({
-          columns: formData.columns,
-          tiers: formData.tiers,
-          controlPanelColumn: formData.controlPanelColumn,
-          controlPanelTiers: formData.controlPanelTiers,
-          controllerType: formData.options.controllerType,
-          frameType: formData.options.frameType,
+          columns: updatedFormData.columns,
+          tiers: updatedFormData.tiers,
+          controlPanelColumn: updatedFormData.controlPanelColumn,
+          controlPanelTiers: updatedFormData.controlPanelTiers,
+          controllerType: updatedFormData.options.controllerType,
+          frameType: updatedFormData.options.frameType,
           frameText: getFrameText(),
-          lockerColor: formData.options.lockerColor,
-          customColor: formData.options.customColor,
-          handle: formData.options.handle,
-          perforation: formData.options.perforation,
-          acrylic: formData.options.acrylic,
-          tierConfig: formData.tierConfig,
-          dualController: formData.options.dualController,
-          columnConfigs: formData.columnConfigs
+          lockerColor: updatedFormData.options.lockerColor,
+          customColor: updatedFormData.options.customColor,
+          handle: updatedFormData.options.handle,
+          perforation: updatedFormData.options.perforation,
+          acrylic: updatedFormData.options.acrylic,
+          tierConfig: updatedFormData.tierConfig,
+          dualController: updatedFormData.options.dualController,
+          columnConfigs: updatedFormData.columnConfigs
         })
       });
 
@@ -1331,7 +1334,13 @@ function App({ user, onLogout }) {
                 </div>
                 <div className="option-group">
                   <label>상세 장소</label>
-                  <input type="text" name="detailedLocation" value={formData.detailedLocation} onChange={handleChange} placeholder="회사 1층 로비" />
+                  <input
+                    type="text"
+                    name="detailedLocation"
+                    value={formData.detailedLocation}
+                    onChange={handleChange}
+                    placeholder="회사 1층 로비"
+                  />
                 </div>
 
                 {/* 견적 생성 버튼 */}

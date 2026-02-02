@@ -632,26 +632,52 @@ async function createDetailSheet(workbook, quoteData, previewImageBase64, custom
         qty: 1,
         unitPrice: breakdown.basePrice,
         amount: breakdown.basePrice,
-        remark: '산업용 PC'
+        remark: '산업용 PC',
+        isControlItem: true // 제어부 마킹
     });
 
-    // 2. Locker Body (본체부)
-    const bodySpec = [
-        `▸ W500mm × D600mm × H${input.tiers * 480}mm`,
-        `▸ 1열${input.tiers}단 (비균등)`,
-        '▸ 국산 고급형'
-    ].join('\n');
+    // 2. Locker Body (본체부) - 단수별 그룹화
+    if (breakdown.lockerBodiesBreakdown && breakdown.lockerBodiesBreakdown.length > 0) {
+        // 단수별 분리 표시
+        breakdown.lockerBodiesBreakdown.forEach((body) => {
+            const bodySpec = [
+                `▸ W500mm × D600mm × H${body.tiers * 480}mm`,
+                `▸ 1열${body.tiers}단 (비균등)`,
+                '▸ 국산 고급형'
+            ].join('\n');
 
-    priceItems.push({
-        name: '본체부\n(1열' + input.tiers + '단형)',
-        spec: bodySpec,
-        color: '백색',
-        unit: '열',
-        qty: breakdown.bodyColumns,
-        unitPrice: breakdown.unitBodyCost,
-        amount: breakdown.lockerBodyCost,
-        remark: '냉연강판'
-    });
+            priceItems.push({
+                name: `본체부\n(1열${body.tiers}단형)`,
+                spec: bodySpec,
+                color: '백색',
+                unit: '열',
+                qty: body.columns,
+                unitPrice: body.unitCost,
+                amount: body.totalCost,
+                remark: '냉연강판',
+                isBodyItem: true // 함체부 마킹
+            });
+        });
+    } else {
+        // 하위 호환: 기존 단일 항목 방식
+        const bodySpec = [
+            `▸ W500mm × D600mm × H${input.tiers * 480}mm`,
+            `▸ 1열${input.tiers}단 (비균등)`,
+            '▸ 국산 고급형'
+        ].join('\n');
+
+        priceItems.push({
+            name: '본체부\n(1열' + input.tiers + '단형)',
+            spec: bodySpec,
+            color: '백색',
+            unit: '열',
+            qty: breakdown.bodyColumns,
+            unitPrice: breakdown.unitBodyCost,
+            amount: breakdown.lockerBodyCost,
+            remark: '냉연강판',
+            isBodyItem: true
+        });
+    }
 
     // 3. Program
     priceItems.push({
@@ -717,7 +743,8 @@ async function createDetailSheet(workbook, quoteData, previewImageBase64, custom
         qty: 1,
         unitPrice: breakdown.installationCost,
         amount: breakdown.installationCost,
-        remark: '기술 지원'
+        remark: '기술 지원',
+        isInstallItem: true // 설치 마킹
     });
 
     // 테이블 데이터 행용 깔끔한 border 스타일
@@ -788,9 +815,13 @@ async function createDetailSheet(workbook, quoteData, previewImageBase64, custom
         remarkCell.alignment = { horizontal: 'left', vertical: 'middle', wrapText: true };
         remarkCell.border = tableBorder;
 
-        // Adjust row height based on content (여유있게 설정)
+        // Adjust row height based on content
+        // 제어부, 함체부, 설치 항목은 높게, 나머지(옵션/프로그램)는 낮게
         const specLines = item.spec.split('\n').length;
-        const minHeight = Math.max(42, specLines * 16); // 기본 42, 줄당 16pt로 증가
+        const isMainItem = item.isControlItem || item.isBodyItem || item.isInstallItem;
+        const minHeight = isMainItem
+            ? Math.max(38, specLines * 12) // 주요 항목: 기본 38pt
+            : Math.max(24, specLines * 10); // 옵션/프로그램: 기본 24pt
         sheet.getRow(rowIndex).height = minHeight;
 
         rowIndex++;
@@ -887,7 +918,16 @@ async function createDetailSheet(workbook, quoteData, previewImageBase64, custom
             // D-H열 너비 계산 (5개 컬럼)
             // D=8, E=8, F=12, G=14, H=16 = 총 58
             const availableWidth = (8 + 8 + 12 + 14 + 16) * 7.2; // 약 417.6pt
-            const maxImageHeight = 286; // 최대 높이 제한 (30% 증가: 220 * 1.3)
+
+            // 항목 수에 따라 이미지 크기 동적 조절
+            // 기본 항목: 제어부(1) + 본체부(1~n) + 프로그램(1) + 설치(1) = 4+
+            // 옵션 항목 추가 시 이미지 축소
+            const baseItems = 4; // 제어부, 본체부(최소1), 프로그램, 설치
+            const extraItems = Math.max(0, priceItems.length - baseItems);
+
+            // 항목이 많을수록 이미지 최대 높이 축소
+            // 기본: 286pt, 추가 항목당 15pt 감소 (최소 180pt)
+            const maxImageHeight = Math.max(180, 286 - extraItems * 15);
 
             let targetWidth = availableWidth * 1.235; // 30% 증가 (0.95 * 1.3)
             let targetHeight = targetWidth / aspectRatio;
@@ -896,7 +936,7 @@ async function createDetailSheet(workbook, quoteData, previewImageBase64, custom
             if (targetHeight > maxImageHeight) {
                 targetHeight = maxImageHeight;
                 targetWidth = targetHeight * aspectRatio;
-                console.log('2D Layout Image: scaled down to fit page');
+                console.log(`2D Layout Image: scaled down (${priceItems.length} items, maxH=${maxImageHeight})`);
             }
 
             const previewId = workbook.addImage({
@@ -911,7 +951,8 @@ async function createDetailSheet(workbook, quoteData, previewImageBase64, custom
             });
 
             console.log('2D Layout Image: aspect ratio', aspectRatio.toFixed(2),
-                'width:', targetWidth.toFixed(0), 'height:', targetHeight.toFixed(0));
+                'width:', targetWidth.toFixed(0), 'height:', targetHeight.toFixed(0),
+                'items:', priceItems.length);
 
             // 이미지 높이에 맞춰 행 확보 (1행당 약 18pt)
             imageRowSpan = Math.ceil(targetHeight / 18) + 2;
