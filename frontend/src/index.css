@@ -1178,129 +1178,185 @@ h1 {
   display: inline-block;
 }
 
+/* ========================================
+   Status Badge - Refined Luxury Style
+   ======================================== */
 .status-badge {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
+  gap: 7px;
+  padding: 7px 14px 7px 10px;
   background: var(--status-bg);
-  border: 1px solid transparent;
-  border-radius: 20px;
-  font-size: 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--status-color) 15%, transparent);
+  border-radius: 10px;
+  font-size: 0.78rem;
   font-weight: 600;
+  letter-spacing: -0.01em;
   color: var(--status-color);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
+  position: relative;
+  overflow: hidden;
+}
+
+.status-badge::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg,
+    color-mix(in srgb, var(--status-color) 5%, transparent) 0%,
+    transparent 50%);
+  opacity: 0;
+  transition: opacity 0.2s ease;
 }
 
 .status-badge:hover {
-  border-color: var(--status-color);
+  border-color: color-mix(in srgb, var(--status-color) 35%, transparent);
   transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow:
+    0 2px 8px color-mix(in srgb, var(--status-color) 15%, transparent),
+    0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.status-badge:hover::before {
+  opacity: 1;
+}
+
+.status-badge:active {
+  transform: translateY(0);
+}
+
+/* 읽기 전용 배지 (문의상세 모달용) */
+.status-badge.status-badge-readonly {
+  cursor: default;
+  pointer-events: none;
+}
+
+.status-badge.status-badge-readonly:hover {
+  transform: none;
+  box-shadow: none;
+  border-color: color-mix(in srgb, var(--status-color) 15%, transparent);
 }
 
 .status-badge.updating {
-  opacity: 0.6;
+  opacity: 0.7;
   cursor: wait;
 }
 
-.status-badge.updating .status-dot {
-  animation: pulse 1s infinite;
+.status-badge.updating .status-icon-wrapper svg {
+  animation: statusSpin 1s linear infinite;
 }
 
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
+@keyframes statusSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 /* 상태 변경 성공 피드백 */
 .status-badge.success {
-  animation: successFlash 0.4s ease-out;
-  border-color: #10b981;
-  background: rgba(16, 185, 129, 0.15);
+  animation: successPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  border-color: color-mix(in srgb, var(--status-color) 40%, transparent);
+  background: color-mix(in srgb, var(--status-color) 12%, transparent);
 }
 
 .status-badge .success-check {
-  animation: checkPop 0.3s ease-out;
+  animation: checkDraw 0.3s ease-out forwards;
 }
 
-@keyframes successFlash {
+@keyframes successPop {
   0% { transform: scale(1); }
-  30% { transform: scale(1.05); background: rgba(16, 185, 129, 0.25); }
+  40% { transform: scale(1.06); }
   100% { transform: scale(1); }
 }
 
-@keyframes checkPop {
-  0% { transform: scale(0); opacity: 0; }
-  50% { transform: scale(1.2); }
-  100% { transform: scale(1); opacity: 1; }
+@keyframes checkDraw {
+  0% { stroke-dasharray: 24; stroke-dashoffset: 24; }
+  100% { stroke-dasharray: 24; stroke-dashoffset: 0; }
 }
 
-.status-dot {
-  width: 6px;
-  height: 6px;
-  background: var(--status-color);
-  border-radius: 50%;
+.status-icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  background: color-mix(in srgb, var(--status-color) 12%, transparent);
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.status-icon-wrapper svg {
   flex-shrink: 0;
 }
 
 .status-label {
   line-height: 1;
+  position: relative;
+  z-index: 1;
 }
 
 .status-chevron {
   flex-shrink: 0;
-  opacity: 0.6;
-  transition: transform 0.2s ease;
+  opacity: 0.5;
+  transition: all 0.2s ease;
+  margin-left: -2px;
 }
 
 .status-badge:hover .status-chevron {
-  opacity: 1;
+  opacity: 0.8;
+  transform: translateY(1px);
 }
 
-/* Status Dropdown */
+/* ========================================
+   Status Dropdown - Premium Design
+   ======================================== */
 .status-dropdown {
   position: absolute;
-  top: calc(100% + 4px);
+  top: calc(100% + 6px);
   left: 50%;
   transform: translateX(-50%);
   background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 14px;
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.05),
+    0 10px 20px -5px rgba(0, 0, 0, 0.1),
+    0 0 0 1px rgba(0, 0, 0, 0.02);
   padding: 6px;
   z-index: 50;
-  min-width: 140px;
-  animation: dropdownSlide 0.15s ease-out;
+  min-width: 160px;
+  animation: dropdownReveal 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  backdrop-filter: blur(8px);
 }
 
-@keyframes dropdownSlide {
+@keyframes dropdownReveal {
   from {
     opacity: 0;
-    transform: translateX(-50%) translateY(-4px);
+    transform: translateX(-50%) translateY(-8px) scale(0.96);
   }
   to {
     opacity: 1;
-    transform: translateX(-50%) translateY(0);
+    transform: translateX(-50%) translateY(0) scale(1);
   }
 }
 
 .status-option {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   width: 100%;
-  padding: 8px 12px;
+  padding: 10px 12px;
   background: transparent;
   border: none;
-  border-radius: 8px;
-  font-size: 0.8rem;
+  border-radius: 10px;
+  font-size: 0.82rem;
   font-weight: 500;
-  color: #334155;
+  color: #475569;
   cursor: pointer;
   transition: all 0.15s ease;
   text-align: left;
+  position: relative;
 }
 
 .status-option:hover {
@@ -1308,10 +1364,36 @@ h1 {
   color: var(--option-color);
 }
 
+.status-option:hover .option-icon {
+  background: color-mix(in srgb, var(--option-color) 15%, transparent);
+  transform: scale(1.05);
+}
+
 .status-option.selected {
   background: var(--option-bg);
   color: var(--option-color);
   font-weight: 600;
+}
+
+.status-option.selected .option-icon {
+  background: color-mix(in srgb, var(--option-color) 15%, transparent);
+}
+
+.option-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: #f1f5f9;
+  border-radius: 7px;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+  color: inherit;
+}
+
+.option-label {
+  flex: 1;
 }
 
 .option-dot {
@@ -2855,6 +2937,185 @@ select:focus {
 
 .btn-slate:hover {
   background: #334155 !important;
+}
+
+/* ========================================
+   3D Warning Modal (Refined Design)
+   ======================================== */
+.warning-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.7) 0%, rgba(30, 58, 95, 0.8) 100%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  animation: warningOverlayIn 0.25s ease-out;
+  padding: 20px;
+}
+
+@keyframes warningOverlayIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.warning-modal-card {
+  position: relative;
+  background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+  border-radius: 20px;
+  padding: 36px 32px 32px;
+  max-width: 380px;
+  width: 100%;
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.07),
+    0 20px 40px -8px rgba(30, 58, 95, 0.25),
+    0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+  animation: warningCardIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  text-align: center;
+}
+
+@keyframes warningCardIn {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.warning-modal-icon {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 20px;
+  background: linear-gradient(145deg, #eff6ff, #dbeafe);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: iconFloat 3s ease-in-out infinite;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+}
+
+@keyframes iconFloat {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-4px) rotate(3deg);
+  }
+}
+
+.warning-modal-icon svg {
+  animation: iconPulse 2s ease-in-out infinite;
+}
+
+@keyframes iconPulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+.warning-modal-content {
+  margin-bottom: 24px;
+}
+
+.warning-modal-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 10px 0;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+}
+
+.warning-modal-desc {
+  font-size: 0.95rem;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.6;
+}
+
+.warning-modal-actions {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+}
+
+.warning-modal-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 14px 18px;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  white-space: nowrap;
+}
+
+.warning-modal-btn-secondary {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+.warning-modal-btn-secondary:hover {
+  background: #e2e8f0;
+  color: #334155;
+  transform: translateY(-1px);
+}
+
+.warning-modal-btn-primary {
+  background: linear-gradient(135deg, #1e3a5f 0%, #2d4a6f 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(30, 58, 95, 0.3);
+}
+
+.warning-modal-btn-primary:hover {
+  background: linear-gradient(135deg, #2d4a6f 0%, #3d5a7f 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(30, 58, 95, 0.4);
+}
+
+.warning-modal-btn-primary:active {
+  transform: translateY(0);
+}
+
+.warning-modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.warning-modal-close:hover {
+  background: #f1f5f9;
+  color: #64748b;
 }
 
 /* Color Selector */

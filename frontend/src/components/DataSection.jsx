@@ -1,12 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import InquiryDetailModal from './InquiryDetailModal';
 
-// 상태 정의
+// 상태 정의 (세련된 색상 팔레트)
 const STATUS_OPTIONS = [
-    { value: 'inquiry', label: '문의/견적중', color: '#6366f1', bgColor: '#eef2ff' },
-    { value: 'sent', label: '견적서 발송', color: '#f59e0b', bgColor: '#fef3c7' },
-    { value: 'ordered', label: '수주완료', color: '#10b981', bgColor: '#d1fae5' },
-    { value: 'delivered', label: '납품완료', color: '#6b7280', bgColor: '#f3f4f6' }
+    { value: 'inquiry', label: '견적 진행', color: '#4f46e5', bgColor: 'rgba(79, 70, 229, 0.08)', icon: 'progress' },
+    { value: 'sent', label: '견적서 발송', color: '#ea580c', bgColor: 'rgba(234, 88, 12, 0.08)', icon: 'sent' },
+    { value: 'ordered', label: '수주 완료', color: '#059669', bgColor: 'rgba(5, 150, 105, 0.08)', icon: 'check' },
+    { value: 'delivered', label: '납품 완료', color: '#475569', bgColor: 'rgba(71, 85, 105, 0.08)', icon: 'complete' }
 ];
 
 function DataSection({ inquiries, onApplyInquiry, onSaveInquiry, apiUrl, getHeaders }) {
@@ -180,14 +180,36 @@ function DataSection({ inquiries, onApplyInquiry, onSaveInquiry, apiUrl, getHead
                                                     disabled={isUpdating}
                                                 >
                                                     {isSuccess ? (
-                                                        <svg className="success-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="3">
+                                                        <svg className="success-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                                                             <polyline points="20 6 9 17 4 12" />
                                                         </svg>
                                                     ) : (
-                                                        <span className="status-dot" />
+                                                        <span className="status-icon-wrapper">
+                                                            {statusInfo.icon === 'progress' && (
+                                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                                                    <circle cx="12" cy="12" r="10" strokeDasharray="32" strokeDashoffset="10" />
+                                                                </svg>
+                                                            )}
+                                                            {statusInfo.icon === 'sent' && (
+                                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                                                    <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
+                                                                </svg>
+                                                            )}
+                                                            {statusInfo.icon === 'check' && (
+                                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                                                    <polyline points="20 6 9 17 4 12" />
+                                                                </svg>
+                                                            )}
+                                                            {statusInfo.icon === 'complete' && (
+                                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                                                                    <polyline points="22 4 12 14.01 9 11.01" />
+                                                                </svg>
+                                                            )}
+                                                        </span>
                                                     )}
                                                     <span className="status-label">{statusInfo.label}</span>
-                                                    <svg className="status-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                    <svg className="status-chevron" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                                                         <polyline points="6 9 12 15 18 9" />
                                                     </svg>
                                                 </button>
@@ -204,10 +226,32 @@ function DataSection({ inquiries, onApplyInquiry, onSaveInquiry, apiUrl, getHead
                                                                 }}
                                                                 onClick={(e) => handleStatusChange(e, item, option.value)}
                                                             >
-                                                                <span className="option-dot" />
-                                                                <span>{option.label}</span>
+                                                                <span className="option-icon">
+                                                                    {option.icon === 'progress' && (
+                                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                                            <circle cx="12" cy="12" r="10" strokeDasharray="32" strokeDashoffset="10" />
+                                                                        </svg>
+                                                                    )}
+                                                                    {option.icon === 'sent' && (
+                                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                                            <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
+                                                                        </svg>
+                                                                    )}
+                                                                    {option.icon === 'check' && (
+                                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                                            <polyline points="20 6 9 17 4 12" />
+                                                                        </svg>
+                                                                    )}
+                                                                    {option.icon === 'complete' && (
+                                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                                                                            <polyline points="22 4 12 14.01 9 11.01" />
+                                                                        </svg>
+                                                                    )}
+                                                                </span>
+                                                                <span className="option-label">{option.label}</span>
                                                                 {item.status === option.value && (
-                                                                    <svg className="check-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                                                                    <svg className="check-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                                                                         <polyline points="20 6 9 17 4 12" />
                                                                     </svg>
                                                                 )}

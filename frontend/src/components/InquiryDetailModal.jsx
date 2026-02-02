@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 
 // 상태 정의 (DataSection과 동일)
 const STATUS_OPTIONS = [
-    { value: 'inquiry', label: '문의/견적중', color: '#6366f1', bgColor: '#eef2ff' },
-    { value: 'sent', label: '견적서 발송', color: '#f59e0b', bgColor: '#fef3c7' },
-    { value: 'ordered', label: '수주완료', color: '#10b981', bgColor: '#d1fae5' },
-    { value: 'delivered', label: '납품완료', color: '#6b7280', bgColor: '#f3f4f6' }
+    { value: 'inquiry', label: '견적 진행', color: '#4f46e5', bgColor: 'rgba(79, 70, 229, 0.08)', icon: 'progress' },
+    { value: 'sent', label: '견적서 발송', color: '#ea580c', bgColor: 'rgba(234, 88, 12, 0.08)', icon: 'sent' },
+    { value: 'ordered', label: '수주 완료', color: '#059669', bgColor: 'rgba(5, 150, 105, 0.08)', icon: 'check' },
+    { value: 'delivered', label: '납품 완료', color: '#475569', bgColor: 'rgba(71, 85, 105, 0.08)', icon: 'complete' }
 ];
 
 function InquiryDetailModal({ inquiry, onClose, onSave, onApply, apiUrl, getHeaders }) {
@@ -187,26 +187,48 @@ function InquiryDetailModal({ inquiry, onClose, onSave, onApply, apiUrl, getHead
             <div className="inquiry-detail-modal" onClick={e => e.stopPropagation()}>
                 <div className="modal-header">
                     <h2>
-                        <span className="header-icon">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <span className="header-icon-minimal" style={{ transform: 'translateY(2px)' }}>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                                <polyline points="14 2 14 8 20 8" />
-                                <line x1="16" y1="13" x2="8" y2="13" />
-                                <line x1="16" y1="17" x2="8" y2="17" />
-                                <polyline points="10 9 9 9 8 9" />
+                                <path d="M14 2v6h6" />
+                                <circle cx="11" cy="14" r="3" />
+                                <path d="M13.5 16.5L16 19" />
                             </svg>
                         </span>
                         {isEditing ? '문의 수정' : '문의 상세'}
-                        {/* 상태 배지 - 타이틀 옆 (읽기 전용) */}
+                        {/* 상태 배지 - 타이틀 옆 (문의내역과 동일 스타일) */}
                         <span
-                            className="status-badge-header"
+                            className="status-badge status-badge-readonly"
                             style={{
                                 '--status-color': getStatusInfo(formData.status).color,
-                                '--status-bg': getStatusInfo(formData.status).bgColor
+                                '--status-bg': getStatusInfo(formData.status).bgColor,
+                                marginLeft: '12px'
                             }}
                         >
-                            <span className="status-dot" />
-                            {getStatusInfo(formData.status).label}
+                            <span className="status-icon-wrapper">
+                                {getStatusInfo(formData.status).icon === 'progress' && (
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                        <circle cx="12" cy="12" r="10" strokeDasharray="32" strokeDashoffset="10" />
+                                    </svg>
+                                )}
+                                {getStatusInfo(formData.status).icon === 'sent' && (
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                        <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
+                                    </svg>
+                                )}
+                                {getStatusInfo(formData.status).icon === 'check' && (
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                        <polyline points="20 6 9 17 4 12" />
+                                    </svg>
+                                )}
+                                {getStatusInfo(formData.status).icon === 'complete' && (
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                                        <polyline points="22 4 12 14.01 9 11.01" />
+                                    </svg>
+                                )}
+                            </span>
+                            <span className="status-label">{getStatusInfo(formData.status).label}</span>
                         </span>
                     </h2>
                     <div className="header-actions">

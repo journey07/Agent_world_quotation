@@ -1322,14 +1322,14 @@ function App({ user, onLogout }) {
                 <div className="option-group">
                   <label>설치지역</label>
                   <select name="region" value={formData.region} onChange={handleChange}>
-                    <option value="seoul">서울 (+50만)</option>
-                    <option value="gyeonggi">경기 (+50만)</option>
-                    <option value="incheon">인천 (+50만)</option>
-                    <option value="chungcheong">충청 (+65만)</option>
-                    <option value="gangwon">강원 (+65만)</option>
-                    <option value="jeolla">전라 (+75만)</option>
-                    <option value="gyeongsang">경상 (+75만)</option>
-                    <option value="jeju">제주 (+110만)</option>
+                    <option value="seoul">서울</option>
+                    <option value="gyeonggi">경기</option>
+                    <option value="incheon">인천</option>
+                    <option value="chungcheong">충청</option>
+                    <option value="gangwon">강원</option>
+                    <option value="jeolla">전라</option>
+                    <option value="gyeongsang">경상</option>
+                    <option value="jeju">제주</option>
                   </select>
                 </div>
                 <div className="option-group">
@@ -1906,49 +1906,50 @@ function App({ user, onLogout }) {
 
           {/* 3D Warning Modal */}
           {showThreeDWarning && (
-              <div className="excel-loading-modal" style={{ zIndex: 1000 }}>
-                <div className="excel-loading-content" style={{ maxWidth: '400px' }}>
-                  <div className="excel-loading-icon">
-                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <rect x="4" y="8" width="16" height="12" rx="2" stroke="#475569" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                      <line x1="12" y1="4" x2="12" y2="8" stroke="#475569" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                      <circle cx="12" cy="2" r="1.5" stroke="#475569" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                      {/* Left Eye (Red X) */}
-                      <path d="M7 11L10 14M10 11L7 14" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                      {/* Right Eye (Red X) */}
-                      <path d="M14 11L17 14M17 11L14 14" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                      {/* Mouth */}
-                      <path d="M9 17H15" stroke="#475569" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              <div className="warning-modal-overlay" onClick={() => setShowThreeDWarning(false)}>
+                <div className="warning-modal-card" onClick={(e) => e.stopPropagation()}>
+                  {/* 3D Cube Icon */}
+                  <div className="warning-modal-icon">
+                    <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M24 4L42 14V34L24 44L6 34V14L24 4Z" stroke="url(#cube-gradient)" strokeWidth="2.5" strokeLinejoin="round" fill="none"/>
+                      <path d="M24 4L24 44" stroke="url(#cube-gradient)" strokeWidth="2" strokeLinejoin="round" opacity="0.5"/>
+                      <path d="M6 14L24 24L42 14" stroke="url(#cube-gradient)" strokeWidth="2" strokeLinejoin="round" opacity="0.5"/>
+                      <circle cx="24" cy="24" r="4" fill="url(#cube-gradient)" opacity="0.3"/>
+                      <defs>
+                        <linearGradient id="cube-gradient" x1="6" y1="4" x2="42" y2="44">
+                          <stop offset="0%" stopColor="#3b82f6"/>
+                          <stop offset="100%" stopColor="#1e3a5f"/>
+                        </linearGradient>
+                      </defs>
                     </svg>
                   </div>
-                  <h3 style={{ marginBottom: '16px', color: '#0f172a', letterSpacing: '-0.02em' }}>3D 이미지가 없습니다</h3>
-                  <p style={{ marginBottom: '24px', lineHeight: '1.6', fontSize: '1.35rem', color: '#475569' }}>
-                    먼저 3D 이미지를 생성하시겠습니까?
-                  </p>
-                  <div style={{ display: 'flex', gap: '12px', width: '100%' }}>
+
+                  {/* Content */}
+                  <div className="warning-modal-content">
+                    <h3 className="warning-modal-title">3D 이미지 없이 진행할까요?</h3>
+                    <p className="warning-modal-desc">
+                      3D 설치 예시 이미지를 추가하면<br/>
+                      더 완성도 높은 견적서를 만들 수 있어요
+                    </p>
+                  </div>
+
+                  {/* Buttons */}
+                  <div className="warning-modal-actions">
                     <button
-                      className="btn-primary btn-slate"
-                      style={{ margin: 0, flex: 1 }}
+                      className="warning-modal-btn warning-modal-btn-secondary"
                       onClick={() => handleDownloadExcel(true)}
                     >
-                      그대로 다운로드
+                      <span>2D만 포함</span>
                     </button>
                     <button
-                      className="btn-primary"
-                      style={{ margin: 0, flex: 1 }}
+                      className="warning-modal-btn warning-modal-btn-primary"
                       onClick={() => {
                         setShowThreeDWarning(false);
-
-                        // previewImage 확인 (stateRef 사용하여 최신 상태 반영)
                         const currentPreviewImage = stateRef.current.previewImage || previewImage;
-
                         if (currentPreviewImage) {
-                          // 2D 이미지가 있으면 3D 생성 함수 호출
                           handleGenerate3D();
                         } else {
-                          // 2D 이미지가 없으면 2D 생성 섹션으로 이동
                           setViewMode('2d');
-                          // Scroll to 2D generation section
                           const previewSection = document.querySelector('[id*="preview"]') || document.querySelector('.preview-section');
                           if (previewSection) {
                             previewSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1956,21 +1957,22 @@ function App({ user, onLogout }) {
                         }
                       }}
                     >
-                      3D 이미지 생성
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <path d="M12 2L20 7V17L12 22L4 17V7L12 2Z" strokeLinejoin="round"/>
+                      </svg>
+                      <span>3D 생성하기</span>
                     </button>
                   </div>
+
+                  {/* Close button */}
                   <button
-                    style={{
-                      marginTop: '32px',
-                      background: 'none',
-                      border: 'none',
-                      color: '#64748b',
-                      cursor: 'pointer',
-                      fontSize: '1rem'
-                    }}
+                    className="warning-modal-close"
                     onClick={() => setShowThreeDWarning(false)}
+                    aria-label="닫기"
                   >
-                    취소
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round"/>
+                    </svg>
                   </button>
                 </div>
               </div>
