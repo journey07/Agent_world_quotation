@@ -98,7 +98,7 @@ function App({ user, onLogout }) {
       frameTextCustom: '', // 직접입력 시 사용
       lockerColor: 'white', // 'white', 'ivory', 'black', 'custom'
       customColor: '#808080', // Custom hex color
-      handle: false, // 손잡이 옵션
+      handle: true, // 손잡이 옵션 (기본 선택)
       controllerType: 'standard' // 'qr', 'standard', 'barrier-free'
     },
     region: 'seoul',
@@ -566,8 +566,14 @@ function App({ user, onLogout }) {
     setError(null);
 
     try {
+      // previewConfig의 열별 설정을 우선 사용 (견적 요약과 동기화)
       const requestData = {
         ...formData,
+        columns: previewConfig?.columns || formData.columns,
+        tiers: previewConfig?.tiers || formData.tiers,
+        controlPanelColumn: previewConfig?.controlPanelColumn || formData.controlPanelColumn,
+        controlPanelTiers: previewConfig?.controlPanelTiers || formData.controlPanelTiers,
+        columnConfigs: previewConfig?.columnConfigs || formData.columnConfigs,
         previewImage: currentPreviewImage || null,
         generatedImage: currentGeneratedImage || null
       };
@@ -1322,14 +1328,15 @@ function App({ user, onLogout }) {
                 <div className="option-group">
                   <label>설치지역</label>
                   <select name="region" value={formData.region} onChange={handleChange}>
-                    <option value="seoul">서울</option>
-                    <option value="gyeonggi">경기</option>
-                    <option value="incheon">인천</option>
-                    <option value="chungcheong">충청</option>
-                    <option value="gangwon">강원</option>
-                    <option value="jeolla">전라</option>
-                    <option value="gyeongsang">경상</option>
-                    <option value="jeju">제주</option>
+                    <option value="seoul">서울시</option>
+                    <option value="gyeonggi">경기도</option>
+                    <option value="incheon">인천시</option>
+                    <option value="chungcheong">충청도</option>
+                    <option value="gangwon">강원도</option>
+                    <option value="jeolla">전라도</option>
+                    <option value="gyeongsangbuk">경상북도</option>
+                    <option value="gyeongsangnam">경상남도</option>
+                    <option value="jeju">제주도</option>
                   </select>
                 </div>
                 <div className="option-group">

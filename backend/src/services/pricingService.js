@@ -1,42 +1,61 @@
 // Korean Pricing Table Data
 const PRICING = {
-    // Base price per control panel unit (제어부 기본가)
-    basePrice: 1850000,
+    // Controller prices by type (제어부 타입별 가격)
+    controllerPrices: {
+        standard: 1800000,      // 일반
+        qr: 1200000,            // QR
+        'barrier-free': 2500000 // 배리어프리
+    },
 
-    // Control panel prices by tier count (제어부 단수별 가격)
+    // Control panel prices by tier count (함체부 단수별 가격 - 손잡이 없음)
     controlPanelTiers: {
         1: 320000,
-        2: 321000,
-        3: 384000,
-        4: 408000,
-        5: 429000,
-        6: 456000,
-        7: 480000,
-        8: 503000,
-        9: 527000,
-        10: 552000
+        2: 370000,
+        3: 430000,
+        4: 480000,
+        5: 530000,
+        6: 580000,
+        7: 660000,
+        8: 710000,
+        9: 760000,
+        10: 810000
+    },
+
+    // Control panel prices with handle (함체부 단수별 가격 - 손잡이 있음)
+    controlPanelTiersWithHandle: {
+        1: 360000,
+        2: 410000,
+        3: 480000,
+        4: 560000,
+        5: 630000,
+        6: 700000,
+        7: 800000,
+        8: 860000,
+        9: 930000,
+        10: 1000000
     },
 
     // Options (옵션가격)
     options: {
         dualController: 200000,    // 듀얼컨트롤러
-        acrylic: 6000,            // 아크릴
+        acrylic: 10000,            // 아크릴 (함 당)
         perforation: 8000,         // 타공 디자인 (셀당)
-        frameFullSet: 700000,      // 프레임 풀세트
-        topFrameOnly: 350000,      // 상부 프레임만
-        sideFrameOnly: 300000      // 사이드 프레임만
+        frameFullSet: 350000,      // 프레임 풀세트
+        topFrameOnly: 150000,      // 상부 프레임만
+        sideFrameOnly: 200000      // 사이드 프레임만
     },
 
     // Regional installation costs (지역별 설치운반비)
     regions: {
-        seoul: 500000,      // 서울
-        gyeonggi: 500000,   // 경기
-        incheon: 500000,    // 인천
-        chungcheong: 650000, // 충청
-        gangwon: 650000,    // 강원
-        jeolla: 750000,     // 전라
-        gyeongsang: 750000, // 경상
-        jeju: 1100000       // 제주
+        seoul: 550000,          // 서울
+        gyeonggi: 550000,       // 경기
+        incheon: 550000,        // 인천
+        chungcheong: 750000,    // 충청
+        gangwon: 750000,        // 강원
+        jeolla: 850000,         // 전라도
+        gyeongsangbuk: 850000,  // 경상북도
+        gyeongsangnam: 950000,  // 경상남도
+        jeju: 1050000           // 제주도
     }
 };
 
@@ -90,10 +109,19 @@ export function calculateQuote({
     const cellsPerUnit = regularCells + controlPanelCells;
     const totalCells = cellsPerUnit * quantity;
 
-    // 1. Base price (제어부 기본가)
-    const basePrice = PRICING.basePrice;
+    // 1. Base price (제어부 타입별 가격)
+    const controllerType = options.controllerType || 'standard';
+    const basePrice = PRICING.controllerPrices[controllerType] || PRICING.controllerPrices.standard;
 
     // 2. Control panel tier cost (함체부 가격 - 단수별 그룹화)
+    // 손잡이 옵션에 따라 가격표 선택
+    const baseTierPriceTable = options.handle
+        ? PRICING.controlPanelTiersWithHandle
+        : PRICING.controlPanelTiers;
+
+    // 타공디자인 선택 시 함체부 단가 10% 증가
+    const perforationMultiplier = options.perforation ? 1.1 : 1;
+
     // 열별로 단수를 집계하여 그룹화
     const bodyColumns = Math.max(0, columns - 1);
     const tierGroups = {};
@@ -106,17 +134,22 @@ export function calculateQuote({
 
     // 그룹화된 함체부 breakdown 생성
     const lockerBodiesBreakdown = Object.entries(tierGroups)
-        .map(([t, cols]) => ({
-            tiers: Number(t),
-            columns: cols,
-            unitCost: PRICING.controlPanelTiers[t] || 0,
-            totalCost: cols * (PRICING.controlPanelTiers[t] || 0)
-        }))
+        .map(([t, cols]) => {
+            const baseUnitCost = baseTierPriceTable[t] || 0;
+            const unitCost = Math.round(baseUnitCost * perforationMultiplier);
+            return {
+                tiers: Number(t),
+                columns: cols,
+                unitCost,
+                totalCost: cols * unitCost
+            };
+        })
         .sort((a, b) => a.tiers - b.tiers); // 단수 오름차순 정렬
 
     // 총 함체부 비용
     const lockerBodyCost = lockerBodiesBreakdown.reduce((sum, g) => sum + g.totalCost, 0);
-    const unitBodyCost = PRICING.controlPanelTiers[maxTiers] || 0; // 하위 호환용
+    const baseUnitBodyCost = baseTierPriceTable[maxTiers] || 0;
+    const unitBodyCost = Math.round(baseUnitBodyCost * perforationMultiplier); // 하위 호환용
 
     // 3. Options cost
     let optionsCost = 0;
@@ -154,19 +187,6 @@ export function calculateQuote({
             quantity: acrylicQuantity,
             unitPrice: acrylicUnitPrice,
             price: acrylicCost
-        });
-    }
-
-    if (options.perforation) {
-        const perforationUnitPrice = PRICING.options.perforation;
-        const perforationQuantity = totalCells;
-        const perforationCost = perforationUnitPrice * perforationQuantity;
-        optionsCost += perforationCost;
-        optionsBreakdown.push({
-            name: '타공 디자인',
-            quantity: perforationQuantity,
-            unitPrice: perforationUnitPrice,
-            price: perforationCost
         });
     }
 
@@ -215,14 +235,15 @@ export function calculateQuote({
 
 function getRegionLabel(region) {
     const labels = {
-        seoul: '서울',
-        gyeonggi: '경기',
-        incheon: '인천',
-        chungcheong: '충청',
-        gangwon: '강원',
-        jeolla: '전라',
-        gyeongsang: '경상',
-        jeju: '제주'
+        seoul: '서울시',
+        gyeonggi: '경기도',
+        incheon: '인천시',
+        chungcheong: '충청도',
+        gangwon: '강원도',
+        jeolla: '전라도',
+        gyeongsangbuk: '경상북도',
+        gyeongsangnam: '경상남도',
+        jeju: '제주도'
     };
     return labels[region] || region;
 }

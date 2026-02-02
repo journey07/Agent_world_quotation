@@ -388,14 +388,14 @@ async function createDetailSheet(workbook, quoteData, previewImageBase64, custom
 
     // Set column widths (8 columns - 정보박스 + 테이블 겸용)
     sheet.columns = [
-        { width: 14 },    // A (품명 / 좌측 라벨)
-        { width: 26.4 },  // B (사양 / 좌측 값) - 10% 증가
-        { width: 8 },     // C (색상 / 빈 컬럼)
-        { width: 8 },     // D (단위 / 우측 시작)
-        { width: 8 },     // E (수량)
-        { width: 12 },    // F (단가)
-        { width: 14 },    // G (금액)
-        { width: 16 },    // H (비고)
+        { width: 14 },    // A (품명)
+        { width: 28 },    // B (사양)
+        { width: 8 },     // C (단위)
+        { width: 8 },     // D (수량)
+        { width: 13 },    // E (단가)
+        { width: 13 },    // F (금액)
+        { width: 11 },    // G-H (비고, 병합 = 22)
+        { width: 11 },
     ];
 
     const { input, breakdown } = quoteData;
@@ -488,20 +488,30 @@ async function createDetailSheet(workbook, quoteData, previewImageBase64, custom
         const leftItem = leftInfoItems[i];
         const rightItem = rightInfoItems[i];
 
+        // 첫 행/마지막 행에 2중 테두리 적용
+        const isFirstRow = i === 0;
+        const isLastRow = i === 4;
+        const rowBorder = {
+            top: { style: isFirstRow ? 'double' : 'thin', color: { argb: isFirstRow ? 'FF1E3A5F' : 'FFE0E0E0' } },
+            left: { style: 'thin', color: { argb: 'FFE0E0E0' } },
+            bottom: { style: isLastRow ? 'double' : 'thin', color: { argb: isLastRow ? 'FF1E3A5F' : 'FFE0E0E0' } },
+            right: { style: 'thin', color: { argb: 'FFE0E0E0' } }
+        };
+
         // --- 좌측 정보 ---
         // 라벨 (A열)
         const leftLabelCell = sheet.getCell(`A${row}`);
         leftLabelCell.value = leftItem.label + ':';
         leftLabelCell.font = { name: 'Malgun Gothic', size: 9, color: { argb: 'FF666666' } };
         leftLabelCell.alignment = { horizontal: 'right', vertical: 'middle' };
-        leftLabelCell.border = thinBorder;
+        leftLabelCell.border = rowBorder;
 
         // 값 (B열)
         const leftValueCell = sheet.getCell(`B${row}`);
         leftValueCell.value = leftItem.value;
         leftValueCell.font = { name: 'Malgun Gothic', size: 9, bold: true };
         leftValueCell.alignment = { horizontal: 'left', vertical: 'middle', indent: 1 };
-        leftValueCell.border = thinBorder;
+        leftValueCell.border = rowBorder;
 
         // --- 빈 컬럼 (C, D, E열) ---
         ['C', 'D', 'E'].forEach(col => {
@@ -521,11 +531,11 @@ async function createDetailSheet(workbook, quoteData, previewImageBase64, custom
             color: { argb: rightItem.bold ? 'FF1E3A5F' : 'FF333333' }
         };
         rightCell.alignment = { horizontal: 'left', vertical: 'middle', indent: 1 };
-        rightCell.border = thinBorder; // 병합된 첫 셀에 테두리 적용
+        rightCell.border = rowBorder;
 
         // 병합된 나머지 셀에도 테두리 적용 (ExcelJS 특성상 필요할 수 있음)
-        sheet.getCell(`G${row}`).border = thinBorder;
-        sheet.getCell(`H${row}`).border = thinBorder;
+        sheet.getCell(`G${row}`).border = rowBorder;
+        sheet.getCell(`H${row}`).border = rowBorder;
 
         sheet.getRow(row).height = 20;
     }
@@ -562,15 +572,14 @@ async function createDetailSheet(workbook, quoteData, previewImageBase64, custom
     // ===== SECTION 5: Table Header (단일 행, 깔끔하게) =====
     const headerRow = rowIndex;
 
-    // 테이블 헤더 정의 (A-B 병합, C 빈칸 사용 안함)
+    // 테이블 헤더 정의 (A-B 품명/사양 병합, G-H 비고 병합)
     const tableHeaders = [
         { cols: 'A:B', label: '품명 / 사양', width: 2 },
-        { cols: 'C', label: '색상', width: 1 },
-        { cols: 'D', label: '단위', width: 1 },
-        { cols: 'E', label: '수량', width: 1 },
-        { cols: 'F', label: '단가', width: 1 },
-        { cols: 'G', label: '금액', width: 1 },
-        { cols: 'H', label: '비고', width: 1 }
+        { cols: 'C', label: '단위', width: 1 },
+        { cols: 'D', label: '수량', width: 1 },
+        { cols: 'E', label: '단가', width: 1 },
+        { cols: 'F', label: '금액', width: 1 },
+        { cols: 'G:H', label: '비고', width: 2 }
     ];
 
     // 헤더 스타일
@@ -591,14 +600,12 @@ async function createDetailSheet(workbook, quoteData, previewImageBase64, custom
     headerAB.border = headerBorder;
     sheet.getCell(`B${headerRow}`).border = headerBorder;
 
-    // 나머지 헤더 (C~H)
+    // 단일 헤더 (C~F)
     const singleHeaders = [
-        { col: 'C', label: '색상' },
-        { col: 'D', label: '단위' },
-        { col: 'E', label: '수량' },
-        { col: 'F', label: '단가' },
-        { col: 'G', label: '금액' },
-        { col: 'H', label: '비고' }
+        { col: 'C', label: '단위' },
+        { col: 'D', label: '수량' },
+        { col: 'E', label: '단가' },
+        { col: 'F', label: '금액' }
     ];
 
     singleHeaders.forEach(h => {
@@ -610,6 +617,16 @@ async function createDetailSheet(workbook, quoteData, previewImageBase64, custom
         cell.border = headerBorder;
     });
 
+    // G-H 병합 (비고)
+    sheet.mergeCells(`G${headerRow}:H${headerRow}`);
+    const headerGH = sheet.getCell(`G${headerRow}`);
+    headerGH.value = '비고';
+    headerGH.font = { name: 'Malgun Gothic', size: 10, bold: true, color: { argb: 'FF1E3A5F' } };
+    headerGH.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF5F5F5' } };
+    headerGH.alignment = { horizontal: 'center', vertical: 'middle' };
+    headerGH.border = headerBorder;
+    sheet.getCell(`H${headerRow}`).border = headerBorder;
+
     sheet.getRow(headerRow).height = 28;
     rowIndex++;
 
@@ -619,7 +636,7 @@ async function createDetailSheet(workbook, quoteData, previewImageBase64, custom
 
     // 1. Control Unit (제어부 - 웹방식)
     const controlSpec = [
-        '▸ W500mm × D600mm × H300mm',
+        '▸ W500mm × D500mm × H1920mm',
         '▸ 웹 연동방식 산업용 PC',
         '▸ 카드 리더기 포함'
     ].join('\n');
@@ -627,8 +644,7 @@ async function createDetailSheet(workbook, quoteData, previewImageBase64, custom
     priceItems.push({
         name: '제어부\n(웹방식)',
         spec: controlSpec,
-        color: '백색',
-        unit: 'SET',
+                unit: 'SET',
         qty: 1,
         unitPrice: breakdown.basePrice,
         amount: breakdown.basePrice,
@@ -641,7 +657,7 @@ async function createDetailSheet(workbook, quoteData, previewImageBase64, custom
         // 단수별 분리 표시
         breakdown.lockerBodiesBreakdown.forEach((body) => {
             const bodySpec = [
-                `▸ W500mm × D600mm × H${body.tiers * 480}mm`,
+                `▸ W500mm × D500mm × H1920mm`,
                 `▸ 1열${body.tiers}단 (비균등)`,
                 '▸ 국산 고급형'
             ].join('\n');
@@ -649,8 +665,7 @@ async function createDetailSheet(workbook, quoteData, previewImageBase64, custom
             priceItems.push({
                 name: `본체부\n(1열${body.tiers}단형)`,
                 spec: bodySpec,
-                color: '백색',
-                unit: '열',
+                                unit: '열',
                 qty: body.columns,
                 unitPrice: body.unitCost,
                 amount: body.totalCost,
@@ -669,8 +684,7 @@ async function createDetailSheet(workbook, quoteData, previewImageBase64, custom
         priceItems.push({
             name: '본체부\n(1열' + input.tiers + '단형)',
             spec: bodySpec,
-            color: '백색',
-            unit: '열',
+                        unit: '열',
             qty: breakdown.bodyColumns,
             unitPrice: breakdown.unitBodyCost,
             amount: breakdown.lockerBodyCost,
@@ -683,8 +697,7 @@ async function createDetailSheet(workbook, quoteData, previewImageBase64, custom
     priceItems.push({
         name: '프로그램',
         spec: '▸ 웹 기반 관리 시스템\n▸ 사용자 인터페이스',
-        color: '-',
-        unit: 'SET',
+                unit: 'SET',
         qty: 1,
         unitPrice: 0,
         amount: 0,
@@ -724,8 +737,7 @@ async function createDetailSheet(workbook, quoteData, previewImageBase64, custom
             priceItems.push({
                 name: opt.name,
                 spec: spec,
-                color: '-',
-                unit: unit,
+                                unit: unit,
                 qty: qty,
                 unitPrice: opt.unitPrice || opt.price,
                 amount: opt.price,
@@ -738,12 +750,11 @@ async function createDetailSheet(workbook, quoteData, previewImageBase64, custom
     priceItems.push({
         name: '운반/설치\n/시운전',
         spec: `▸ 현장 운반 및 설치\n▸ 시운전 및 교육\n▸ ${breakdown.regionLabel}`,
-        color: '-',
         unit: 'SET',
         qty: 1,
         unitPrice: breakdown.installationCost,
         amount: breakdown.installationCost,
-        remark: '기술 지원',
+        remark: '5톤 윙바디, 리프트차, 2인 설치',
         isInstallItem: true // 설치 마킹
     });
 
@@ -755,7 +766,7 @@ async function createDetailSheet(workbook, quoteData, previewImageBase64, custom
         right: { style: 'thin', color: { argb: 'FFE0E0E0' } }
     };
 
-    // Write table data rows
+    // Write table data rows (색상 열 제거, 비고 G-H 병합)
     priceItems.forEach((item) => {
         // Name (A)
         const nameCell = sheet.getCell(`A${rowIndex}`);
@@ -771,49 +782,44 @@ async function createDetailSheet(workbook, quoteData, previewImageBase64, custom
         specCell.alignment = { horizontal: 'left', vertical: 'middle', wrapText: true, indent: 0.5 };
         specCell.border = tableBorder;
 
-        // Color (C)
-        const colorCell = sheet.getCell(`C${rowIndex}`);
-        colorCell.value = item.color;
-        colorCell.font = { name: 'Malgun Gothic', size: 9 };
-        colorCell.alignment = { horizontal: 'center', vertical: 'middle' };
-        colorCell.border = tableBorder;
-
-        // Unit (D)
-        const unitCellData = sheet.getCell(`D${rowIndex}`);
+        // Unit (C) - 색상 제거, 한 열씩 당김
+        const unitCellData = sheet.getCell(`C${rowIndex}`);
         unitCellData.value = item.unit;
         unitCellData.font = { name: 'Malgun Gothic', size: 9 };
         unitCellData.alignment = { horizontal: 'center', vertical: 'middle' };
         unitCellData.border = tableBorder;
 
-        // Quantity (E)
-        const qtyCell = sheet.getCell(`E${rowIndex}`);
+        // Quantity (D)
+        const qtyCell = sheet.getCell(`D${rowIndex}`);
         qtyCell.value = item.qty;
         qtyCell.font = { name: 'Malgun Gothic', size: 9 };
         qtyCell.alignment = { horizontal: 'center', vertical: 'middle' };
         qtyCell.border = tableBorder;
 
-        // Unit Price (F)
-        const unitPriceCell = sheet.getCell(`F${rowIndex}`);
+        // Unit Price (E)
+        const unitPriceCell = sheet.getCell(`E${rowIndex}`);
         unitPriceCell.value = item.unitPrice;
         unitPriceCell.numFmt = '#,##0';
         unitPriceCell.font = { name: 'Malgun Gothic', size: 9 };
         unitPriceCell.alignment = { horizontal: 'right', vertical: 'middle' };
         unitPriceCell.border = tableBorder;
 
-        // Total Price (G)
-        const amountCell = sheet.getCell(`G${rowIndex}`);
+        // Total Price (F)
+        const amountCell = sheet.getCell(`F${rowIndex}`);
         amountCell.value = item.amount;
         amountCell.numFmt = '#,##0';
         amountCell.font = { name: 'Malgun Gothic', size: 9, bold: true, color: { argb: 'FF1E3A5F' } };
         amountCell.alignment = { horizontal: 'right', vertical: 'middle' };
         amountCell.border = tableBorder;
 
-        // Remark (H)
-        const remarkCell = sheet.getCell(`H${rowIndex}`);
+        // Remark (G-H 병합)
+        sheet.mergeCells(`G${rowIndex}:H${rowIndex}`);
+        const remarkCell = sheet.getCell(`G${rowIndex}`);
         remarkCell.value = item.remark;
         remarkCell.font = { name: 'Malgun Gothic', size: 8, color: { argb: 'FF888888' } };
         remarkCell.alignment = { horizontal: 'left', vertical: 'middle', wrapText: true };
         remarkCell.border = tableBorder;
+        sheet.getCell(`H${rowIndex}`).border = tableBorder;
 
         // Adjust row height based on content
         // 제어부, 함체부, 설치 항목은 높게, 나머지(옵션/프로그램)는 낮게
