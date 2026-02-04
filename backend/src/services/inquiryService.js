@@ -136,13 +136,15 @@ export async function updateInquiry(id, updateData) {
     // raw_data 필드 전체 업데이트
     const { data: existing, error: fetchError } = await supabase
         .from('inquiries')
-        .select('raw_data')
+        .select('raw_data, status')
         .eq('id', id)
         .single();
 
     if (fetchError) {
         throw new Error(`Inquiry not found: ${fetchError.message}`);
     }
+
+    const oldStatus = existing.status;
 
     updatePayload.raw_data = {
         ...existing.raw_data,
@@ -158,6 +160,21 @@ export async function updateInquiry(id, updateData) {
 
     if (error) {
         throw new Error(`Failed to update inquiry: ${error.message}`);
+    }
+
+    // 수주 완료로 변경된 경우 world_schedule에 프로젝트 자동 생성
+    if (updateData.status === 'ordered' && oldStatus !== 'ordered') {
+        try {
+            const scheduleApiUrl = process.env.SCHEDULE_API_URL || 'http://localhost:3002/api';
+            await fetch(`${scheduleApiUrl}/projects/from-inquiry/${id}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            console.log(`Schedule project created for inquiry: ${id}`);
+        } catch (scheduleErr) {
+            console.error('Schedule project creation failed:', scheduleErr);
+            // 실패해도 inquiry 업데이트는 성공했으므로 에러 무시
+        }
     }
 
     // 기존 형식으로 반환 (getAllInquiries와 동일한 형식)

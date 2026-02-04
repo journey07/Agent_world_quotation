@@ -314,7 +314,7 @@ function InquiryDetailModal({ inquiry, onClose, onSave, onApply, apiUrl, getHead
                                         name="product"
                                         value={formData.product}
                                         onChange={handleChange}
-                                        placeholder="스마트락커, 키패드락커 등"
+                                        placeholder="물품보관함, 냉장보관함 등"
                                     />
                                 ) : (
                                     <span>{formData.product || '-'}</span>
