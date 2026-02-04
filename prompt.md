@@ -101,3 +101,11 @@ CLAUDE.md에 Notion 업무 체계 추가 계획 실행
 - `DB에 user 추가해줘 ID : magwi, PW : 3171 로`
 - `'설치지역' 옵션에 지역만 놔둬. 금액은 없애고`
 - `문의상세 모달에 '상태'도 문의내역과 일치시켜. 그리고 '문의상세' 왼쪽 SVG 세련되게 바꿔`
+
+## 2026-02-04
+- `World Schedule Agent 구현 계획 실행` - 별도 레포지토리(world_schedule) 생성, Tailwind + shadcn/ui, gantt-task-react 간트차트, Supabase DB 연동 (projects, tasks, activity_logs 테이블)
+
+
+---
+## 2026-02-04 17:53:42
+문의내역과 문의 상세 모달에 '제품'을 추가하자. 문의내역에서는 '업체명' 바로 우측에 문의 상세 모달에서도 '업체명' 우측에 오게. DB에도 inquiries table에 product column추가해

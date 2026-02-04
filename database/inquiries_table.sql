@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS inquiries (
   customer_contact TEXT,
   customer_email TEXT,
   customer_company TEXT,
+  product TEXT,
 
   -- 견적 정보
   columns INTEGER,
@@ -68,3 +69,4 @@ USING (true);
 COMMENT ON TABLE inquiries IS 'B2B 락커 견적 문의 내역';
 COMMENT ON COLUMN inquiries.status IS '문의 상태: inquiry(문의중), quoted(견적완료), ordered(주문완료), completed(완료), cancelled(취소)';
 COMMENT ON COLUMN inquiries.raw_data IS '프론트엔드에서 전송한 원본 데이터 (JSON)';
+COMMENT ON COLUMN inquiries.product IS '제품명 (예: 스마트락커, 키패드락커 등)';

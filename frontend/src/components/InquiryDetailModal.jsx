@@ -20,6 +20,7 @@ function InquiryDetailModal({ inquiry, onClose, onSave, onApply, apiUrl, getHead
         if (inquiry) {
             setFormData({
                 companyName: inquiry.companyName || '',
+                product: inquiry.product || '',
                 industry: inquiry.industry || '',
                 contact: inquiry.contact || '',
                 email: inquiry.email || '',
@@ -152,6 +153,7 @@ function InquiryDetailModal({ inquiry, onClose, onSave, onApply, apiUrl, getHead
         // 원래 값으로 복원
         setFormData({
             companyName: inquiry.companyName || '',
+            product: inquiry.product || '',
             industry: inquiry.industry || '',
             contact: inquiry.contact || '',
             email: inquiry.email || '',
@@ -302,6 +304,20 @@ function InquiryDetailModal({ inquiry, onClose, onSave, onApply, apiUrl, getHead
                                     />
                                 ) : (
                                     <span>{getCompanyDisplay()}</span>
+                                )}
+                            </div>
+                            <div className="detail-item">
+                                <label>제품</label>
+                                {isEditing ? (
+                                    <input
+                                        type="text"
+                                        name="product"
+                                        value={formData.product}
+                                        onChange={handleChange}
+                                        placeholder="스마트락커, 키패드락커 등"
+                                    />
+                                ) : (
+                                    <span>{formData.product || '-'}</span>
                                 )}
                             </div>
                             <div className="detail-item">

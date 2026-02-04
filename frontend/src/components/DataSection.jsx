@@ -122,6 +122,7 @@ function DataSection({ inquiries, onApplyInquiry, onSaveInquiry, apiUrl, getHead
                         <tr>
                             <th>문의 시각</th>
                             <th>업체명</th>
+                            <th>제품</th>
                             <th>구성</th>
                             <th>연락처</th>
                             <th>지역</th>
@@ -132,7 +133,7 @@ function DataSection({ inquiries, onApplyInquiry, onSaveInquiry, apiUrl, getHead
                     <tbody>
                         {inquiries.length === 0 ? (
                             <tr>
-                                <td colSpan="7" className="empty-row">데이터가 없습니다.</td>
+                                <td colSpan="8" className="empty-row">데이터가 없습니다.</td>
                             </tr>
                         ) : (
                             inquiries.map((item) => {
@@ -149,6 +150,7 @@ function DataSection({ inquiries, onApplyInquiry, onSaveInquiry, apiUrl, getHead
                                     >
                                         <td>{formatDate(item.timestamp)}</td>
                                         <td className="cell-company">{item.companyName || '-'}</td>
+                                        <td className="cell-product">{item.product || '-'}</td>
                                         <td className="cell-config">{getConfigSummary(item)}</td>
                                         <td>{item.contact || '-'}</td>
                                         <td>{getRegionLabel(item.region)}</td>

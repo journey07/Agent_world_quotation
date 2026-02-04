@@ -20,6 +20,7 @@ export async function saveInquiry(inquiryData) {
         customer_contact: inquiryData.contact,
         customer_email: inquiryData.email,
         customer_company: inquiryData.companyName,
+        product: inquiryData.product,
         columns: inquiryData.columns,
         rows: inquiryData.tiers,
         material: inquiryData.options?.material,
@@ -89,6 +90,7 @@ export async function getAllInquiries() {
         region: item.raw_data?.region,
         installationBackground: item.raw_data?.installationBackground,
         companyName: item.customer_company,
+        product: item.product,
         contact: item.customer_contact,
         email: item.customer_email,
         detailedLocation: item.raw_data?.detailedLocation,
@@ -122,6 +124,7 @@ export async function updateInquiry(id, updateData) {
     if (updateData.contact) updatePayload.customer_contact = updateData.contact;
     if (updateData.email) updatePayload.customer_email = updateData.email;
     if (updateData.companyName) updatePayload.customer_company = updateData.companyName;
+    if (updateData.product !== undefined) updatePayload.product = updateData.product;
     if (updateData.columns) updatePayload.columns = updateData.columns;
     if (updateData.tiers) updatePayload.rows = updateData.tiers;
     if (updateData.options?.lockerColor) updatePayload.color = updateData.options.lockerColor;
@@ -180,6 +183,7 @@ export async function updateInquiry(id, updateData) {
         region: data.raw_data?.region,
         installationBackground: data.raw_data?.installationBackground,
         companyName: data.customer_company,
+        product: data.product,
         contact: data.customer_contact,
         email: data.customer_email,
         detailedLocation: data.raw_data?.detailedLocation,
