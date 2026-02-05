@@ -8,6 +8,8 @@ import { saveInquiry, getAllInquiries, updateInquiry, deleteInquiry } from '../s
 import { trackApiCall, sendActivityLog, getStatsForDashboard, toggleAgentStatus, setAgentStatus } from '../services/statsService.js';
 import { verifyConnection } from '../services/geminiService.js';
 import { parseConsultationNote, convertToFormData, generateConsultantAdvice } from '../services/consultationService.js';
+import { createClient } from '@supabase/supabase-js';
+import sharp from 'sharp';
 
 const router = Router();
 
@@ -567,8 +569,72 @@ router.post('/generate-3d-installation', async (req, res) => {
 
         const responseTime = Date.now() - startTime;
 
-        // Send completion log
-        sendActivityLog(`3D Generation Completed (${(responseTime / 1000).toFixed(1)}s)`, 'success', responseTime, userName);
+        // Upload 3D image to Supabase Storage
+        let imageUrl = null;
+        try {
+            // Initialize Supabase client
+            const supabase = createClient(
+                process.env.SUPABASE_URL,
+                process.env.SUPABASE_SERVICE_ROLE_KEY
+            );
+
+            // Convert base64 to buffer
+            const imageBuffer = Buffer.from(generated3DImage, 'base64');
+
+            // Compress and convert to WebP using Sharp
+            const compressedImageBuffer = await sharp(imageBuffer)
+                .resize(1920, null, { // Max width 1920px, maintain aspect ratio
+                    fit: 'inside',
+                    withoutEnlargement: true
+                })
+                .webp({ quality: 85 }) // Convert to WebP with 85% quality
+                .toBuffer();
+
+            const fileName = `3d-${Date.now()}-agent-worldlocker-001.webp`;
+            console.log(`📦 Original size: ${(imageBuffer.length / 1024).toFixed(2)}KB → Compressed: ${(compressedImageBuffer.length / 1024).toFixed(2)}KB`);
+
+            // Upload to Supabase Storage
+            const { data: uploadData, error: uploadError } = await supabase.storage
+                .from('quotation-3d')
+                .upload(fileName, compressedImageBuffer, {
+                    contentType: 'image/webp',
+                    cacheControl: '3600'
+                });
+
+            if (uploadError) {
+                console.error('❌ Failed to upload 3D image to Supabase Storage:', uploadError.message);
+                sendActivityLog(
+                    `Warning: 3D image upload failed - ${uploadError.message}`,
+                    'warning',
+                    0,
+                    userName
+                );
+            } else {
+                // Get public URL
+                const { data } = supabase.storage
+                    .from('quotation-3d')
+                    .getPublicUrl(fileName);
+                imageUrl = data.publicUrl;
+                console.log('✅ 3D image uploaded successfully (WebP compressed):', imageUrl);
+            }
+        } catch (uploadException) {
+            console.error('❌ Exception during image upload:', uploadException);
+            sendActivityLog(
+                `Warning: 3D image upload exception - ${uploadException.message}`,
+                'warning',
+                0,
+                userName
+            );
+        }
+
+        // Send completion log with image URL
+        sendActivityLog(
+            `3D Generation Completed (${(responseTime / 1000).toFixed(1)}s)`,
+            'success',
+            responseTime,
+            userName,
+            imageUrl
+        );
 
         // Track API call (this is the main 3D generation task)
         trackApiCall('generate-3d-installation', responseTime, false, true, true, null, userName);
